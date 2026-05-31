@@ -1,6 +1,6 @@
 const STORAGE_KEY = 'math_stepwise_progress_v6_encouragement_linegraphs';
 const OLD_KEY_PREFIX = 'math_stepwise_progress';
-const PARENT_CODE = '1234';
+const DEFAULT_PARENT_CODE = '1234';
 const app = document.getElementById('app');
 
 const levelOrder = ['6A', '5A', '4A', '3A', '2A', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'XV', 'XM', 'XP'];
@@ -30,7 +30,8 @@ const defaultState = () => ({
   dailyRecords: [],
   appRecommendedWarmup: null,
   manualWarmup: null,
-  lastCompletedLessonNumber: null
+  lastCompletedLessonNumber: null,
+  parentCode: DEFAULT_PARENT_CODE
 });
 
 let state = loadState();
@@ -54,7 +55,7 @@ function loadState() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
     if (!saved) return defaultState();
-    return { ...defaultState(), ...saved, student: { ...defaultState().student, ...(saved.student || {}) } };
+    return { ...defaultState(), ...saved, student: { ...defaultState().student, ...(saved.student || {}) }, parentCode: saved.parentCode || DEFAULT_PARENT_CODE }; 
   } catch { return defaultState(); }
 }
 function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
@@ -303,12 +304,12 @@ function lessonStatus(l) {
   return 'locked';
 }
 function renderParentGate() {
-  shell(`<section class="card center parentGate"><h1>Parent Code</h1><p class="muted">Enter the parent code to open Parent View.</p><input id="parentCode" class="codeInput" type="password" inputmode="numeric" placeholder="Enter code" autocomplete="off"><div id="codeError" class="feedback hidden">Incorrect code. Try again.</div><div class="actions"><button type="button" class="secondary" data-action="student">Back to Student View</button><button type="button" class="primary" data-action="unlockParent">Unlock Parent View</button></div><p class="muted smallText">Demo parent code: 1234</p></section>`);
+  shell(`<section class="card center parentGate"><h1>Parent Code</h1><p class="muted">Enter the parent code to open Parent View.</p><input id="parentCode" class="codeInput" type="password" inputmode="numeric" placeholder="Enter code" autocomplete="off"><div id="codeError" class="feedback hidden">Incorrect code. Try again.</div><div class="actions"><button type="button" class="secondary" data-action="student">Back to Student View</button><button type="button" class="primary" data-action="unlockParent">Unlock Parent View</button></div><p class="muted smallText">Ask your parent for the code.</p></section>`);
   setTimeout(() => document.getElementById('parentCode')?.focus(), 0);
 }
 function renderParent() {
   const warmup = activeWarmup();
-  shell(`<section class="hero card"><div><p class="eyebrow">Parent View</p><h1>${state.student.name}'s Progress</h1><p class="muted">Review records, assign next-session Quick Warm-Up, or reset progress.</p></div><div class="heroActions"><button type="button" class="ghost" data-action="studentInfo">Student Information</button><button type="button" class="ghost" data-action="dailyRecord">Daily Work Record</button><button type="button" class="ghost" data-action="assign">Assign Warm-Up</button></div></section><section class="grid three"><div class="card"><p class="muted">Mastered</p><p class="metric">${state.mastered.length}</p></div><div class="card"><p class="muted">Records</p><p class="metric">${state.dailyRecords.length}</p></div><div class="card"><p class="muted">Next Quick Warm-Up</p><p class="metric small">${warmup ? `${warmup.label}<br><span>${warmup.source}</span>` : 'None'}</p></div></section><section class="card"><h2>Parent Settings</h2><p class="muted">Reset is parent-only and clears progress saved on this device.</p><button type="button" class="danger" data-action="reset">Reset Student Progress</button></section>`);
+  shell(`<section class="hero card"><div><p class="eyebrow">Parent View</p><h1>${state.student.name}'s Progress</h1><p class="muted">Review records, assign next-session Quick Warm-Up, or reset progress.</p></div><div class="heroActions"><button type="button" class="ghost" data-action="studentInfo">Student Information</button><button type="button" class="ghost" data-action="dailyRecord">Daily Work Record</button><button type="button" class="ghost" data-action="assign">Assign Warm-Up</button></div></section><section class="grid three"><div class="card"><p class="muted">Mastered</p><p class="metric">${state.mastered.length}</p></div><div class="card"><p class="muted">Records</p><p class="metric">${state.dailyRecords.length}</p></div><div class="card"><p class="muted">Next Quick Warm-Up</p><p class="metric small">${warmup ? `${warmup.label}<br><span>${warmup.source}</span>` : 'None'}</p></div></section><section class="card"><h2>Parent Settings</h2><p class="muted">Parent-only controls are kept here.</p><div class="settingsGrid"><div class="settingsBox"><h3>Change Parent Passcode</h3><p class="muted">Use a simple code that the child will not know.</p><label>Current Code <input id="currentParentCode" class="codeInput smallInput" type="password" inputmode="numeric" autocomplete="off"></label><label>New Code <input id="newParentCode" class="codeInput smallInput" type="password" inputmode="numeric" autocomplete="off"></label><label>Confirm New Code <input id="confirmParentCode" class="codeInput smallInput" type="password" inputmode="numeric" autocomplete="off"></label><div id="passcodeMessage" class="muted"></div><div class="actions left"><button type="button" class="primary" data-action="saveParentCode">Save New Code</button><button type="button" class="secondary" data-action="resetParentCodeDefault">Reset to 1234</button></div></div><div class="settingsBox dangerZone"><h3>Reset Student Progress</h3><p class="muted">Clears progress saved on this device and returns the student to 6A-1.</p><button type="button" class="danger" data-action="reset">Reset Student Progress</button></div></div></section>`);
 }
 function renderStudentInfo() {
   shell(`<section class="card"><button type="button" class="ghost" data-action="parentHome">← Back</button><h1>Student Information</h1><div class="infoGrid"><div><span>Student Name</span><strong>${state.student.name}</strong></div><div><span>Date of Enrollment</span><strong>${fmtDate(state.student.enrollmentDate)}</strong></div><div><span>Starting Level</span><strong>${state.student.startingLevel}</strong></div><div><span>Current Level</span><strong>${state.student.currentLevel}</strong></div><div><span>Current Lesson</span><strong>${currentLesson().displayId}</strong></div><div><span>Parent / Guardian</span><strong>${state.student.parentName}</strong></div><div><span>Notes</span><strong>${state.student.notes}</strong></div></div></section>`);
@@ -355,7 +356,7 @@ document.addEventListener('click', (e) => {
   if (action === 'progress') { screen = 'progress'; return render(); }
   if (action === 'endSession') { session = null; screen = 'student'; return render(); }
   if (action === 'continueLesson') { if (!session?.mastered) return; session = null; startLessonOnly(); return render(); }
-  if (action === 'unlockParent') { const input = document.getElementById('parentCode'); const error = document.getElementById('codeError'); if (input?.value === PARENT_CODE) { parentUnlocked = true; screen = 'parent'; render(); } else { error?.classList.remove('hidden'); input?.focus(); } return; }
+  if (action === 'unlockParent') { const input = document.getElementById('parentCode'); const error = document.getElementById('codeError'); if (input?.value === state.parentCode) { parentUnlocked = true; screen = 'parent'; render(); } else { error?.classList.remove('hidden'); input?.focus(); } return; }
   if (action === 'parentHome') { screen = 'parent'; return render(); }
   if (action === 'studentInfo') { screen = 'studentInfo'; return render(); }
   if (action === 'dailyRecord') { screen = 'dailyRecord'; return render(); }
@@ -363,6 +364,29 @@ document.addEventListener('click', (e) => {
   if (action === 'clearFilters') { recordFilters = { from:'', to:'', level:'all' }; return renderDailyRecord(); }
   if (action === 'saveAssign') { const from = Math.min(assignForm.from, assignForm.to); const to = Math.max(assignForm.from, assignForm.to); state.manualWarmup = { type:'lesson_range', level:assignForm.level, from, to, label: `${assignForm.level}-${from}${from===to?'':` to ${assignForm.level}-${to}`}` }; saveState(); screen = 'parent'; return render(); }
   if (action === 'clearAssign') { state.manualWarmup = null; saveState(); screen = 'parent'; return render(); }
+
+  if (action === 'saveParentCode') {
+    const current = document.getElementById('currentParentCode')?.value || '';
+    const next = document.getElementById('newParentCode')?.value || '';
+    const confirmNext = document.getElementById('confirmParentCode')?.value || '';
+    const msg = document.getElementById('passcodeMessage');
+    if (current !== state.parentCode) { if (msg) msg.innerHTML = '<span class="errorText">Current code is incorrect.</span>'; return; }
+    if (!/^\d{4,6}$/.test(next)) { if (msg) msg.innerHTML = '<span class="errorText">Use a 4 to 6 digit code.</span>'; return; }
+    if (next !== confirmNext) { if (msg) msg.innerHTML = '<span class="errorText">New codes do not match.</span>'; return; }
+    state.parentCode = next;
+    saveState();
+    if (msg) msg.innerHTML = '<span class="successText">Parent code saved.</span>';
+    ['currentParentCode','newParentCode','confirmParentCode'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    return;
+  }
+  if (action === 'resetParentCodeDefault') {
+    state.parentCode = DEFAULT_PARENT_CODE;
+    saveState();
+    const msg = document.getElementById('passcodeMessage');
+    if (msg) msg.innerHTML = '<span class="successText">Parent code reset to 1234.</span>';
+    ['currentParentCode','newParentCode','confirmParentCode'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    return;
+  }
   if (action === 'reset') { if (confirm('Are you sure you want to reset all student progress on this device?')) clearAllProgress(); return; }
 });
 

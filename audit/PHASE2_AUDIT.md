@@ -21,3 +21,8 @@ Additional checks passed:
 - Wrong attempt feedback changes by attempt count.
 - Choice shake feedback exists for wrong taps.
 - Daily Work Record uses SVG line graphs for Progress and Practice/Repetition.
+
+
+## Parent Passcode Update Audit
+
+Passed checks include parent code gate, saved parent code validation, Change Parent Passcode action, Reset to 1234 action, and preservation of parent-only access.

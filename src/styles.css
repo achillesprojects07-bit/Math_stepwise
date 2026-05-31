@@ -95,3 +95,10 @@ th { color: #64748b; background: #f8fafc; font-size: 13px; }
 .point { fill: #ffffff; stroke: #4f46e5; stroke-width: 4; }
 .pointLabel { fill: #334155; font-size: 14px; font-weight: 800; }
 .dateLabel { fill: #64748b; font-size: 12px; font-weight: 700; }
+.settingsGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.settingsBox { border: 1px solid #e5e7eb; border-radius: 18px; padding: 16px; background: #f8fafc; }
+.settingsBox label { display: block; margin: 10px 0; font-weight: 700; color: #475569; }
+.smallInput { width: 100%; margin-top: 6px; box-sizing: border-box; }
+.errorText { color: #b91c1c; font-weight: 800; }
+.successText { color: #047857; font-weight: 800; }
+.dangerZone { background: #fff7ed; border-color: #fed7aa; }

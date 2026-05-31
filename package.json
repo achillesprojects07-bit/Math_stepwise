@@ -1,7 +1,7 @@
 {
-  "name": "math-stepwise-phase2-click-reset-final",
-  "version": "2.5.0",
-  "description": "Phase 2 final workflow with robust click delegation, fixed reset, strict practice again, parent code, records and graphs.",
+  "name": "math-stepwise-phase2-parent-passcode",
+  "version": "2.6.0",
+  "description": "Phase 2 final workflow with parent passcode reset/change, robust click handling, strict practice again, records and line graphs.",
   "type": "module",
   "scripts": {
     "audit": "node audit/audit.js"

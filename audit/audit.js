@@ -8,7 +8,10 @@ const app = fs.readFileSync(path.join(root, 'src/app.js'), 'utf8');
 const checks = [
   ['event delegated actions', "document.addEventListener('click'"],
   ['start action exists', "action === 'start'"],
-  ['parent code gate exists', "PARENT_CODE = '1234'"],
+  ['parent code gate exists', "DEFAULT_PARENT_CODE = '1234'"],
+  ['unlock uses saved parent code', 'input?.value === state.parentCode'],
+  ['change passcode action exists', "action === 'saveParentCode'"],
+  ['reset code default action exists', "action === 'resetParentCodeDefault'"],
   ['reset clears all progress', 'clearAllProgress'],
   ['reset returns default state', 'state = defaultState()'],
   ['current lesson starts at 1', 'currentLessonNumber: 1'],
@@ -41,4 +44,4 @@ for (const ans of [1,2,3,4,5]) {
   const c = safeChoices(ans,1,5);
   if (!c.includes(ans) || c.length !== 4) throw new Error('safeChoices failed for ' + ans);
 }
-console.log('AUDIT PASSED: click handling, reset, practice retention, encouragement rotation, safe choices, parent gate, records and line graphs checked.');
+console.log('AUDIT PASSED: click handling, reset, practice retention, encouragement rotation, safe choices, parent gate, parent passcode reset, records and line graphs checked.');

@@ -29,3 +29,8 @@ Upload these six items together to GitHub:
 ## Latest update: Encouragement + Line Graphs
 
 This build adds rotating child-friendly encouragement messages for repeated wrong attempts so the app always feels responsive. It also changes the Daily Work Record visuals to separate line graphs for Progress and Practice/Repetition trends.
+
+
+## Parent Passcode
+
+Parent View is protected by a code. The default is `1234`. In Parent View → Parent Settings, the parent can change the code or reset it back to `1234`. Student View does not show passcode settings.
