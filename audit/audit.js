@@ -11,6 +11,7 @@ const required = [
   'src/styles.css',
   'src/config/masteryRules.json',
   'src/config/levels.json',
+  'src/config/levels.js',
   'src/curriculum/level6A.js',
   'src/engine/questionGenerator.js',
   'src/engine/masteryEngine.js',
@@ -24,28 +25,83 @@ for (const file of required) {
   if (!fs.existsSync(path.join(root, file))) failures.push(`Missing ${file}`);
 }
 
-const app = fs.readFileSync(path.join(root, 'src/app.js'), 'utf8');
-const curriculum = fs.readFileSync(path.join(root, 'src/curriculum/level6A.js'), 'utf8');
-const rules = JSON.parse(fs.readFileSync(path.join(root, 'src/config/masteryRules.json'), 'utf8'));
+const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
+const app = read('src/app.js');
+const qgen = read('src/engine/questionGenerator.js');
+const mastery = read('src/engine/masteryEngine.js');
+const progress = read('src/engine/progressStore.js');
+const css = read('src/styles.css');
+const curriculum = read('src/curriculum/level6A.js');
+const rules = JSON.parse(read('src/config/masteryRules.json'));
 
-if (!app.includes('Reset Student Progress')) failures.push('Parent reset button text missing.');
-if (app.includes('Reset Demo')) failures.push('Child-facing Reset Demo still present.');
-if (!app.includes('Practice Again')) failures.push('Practice Again workflow text missing.');
-if (!app.includes('Wrong answers do not advance')) {
-  // behavior is checked by code pattern below
-}
-if (!app.includes('showGentleTryAgain')) failures.push('Wrong practice retry flow missing.');
-if (!app.includes('Continue to Next Lesson')) failures.push('Continue to Next Lesson missing.');
-if (!app.includes('End Today’s Session')) failures.push('End Today’s Session missing.');
-if (!curriculum.includes('toVisibleLessonId')) failures.push('Lesson label formatter missing.');
+// Upload structure and visible app basics
+if (!app.includes('Today: ${formatDisplayDate()}')) failures.push('Student View date is missing.');
+if (!curriculum.includes('toVisibleLessonId')) failures.push('Visible lesson label formatter missing.');
 if (!curriculum.includes('displayId')) failures.push('Visible lesson displayId missing.');
-if (rules.studentView.lessonLabelFormat !== 'level-dash-number') failures.push('Lesson label rule not locked.');
-if (!rules.accuracy.practiceAgainMustEndAllCorrect) failures.push('Retention all-correct rule not locked.');
+if (app.includes('6A013')) failures.push('Old zero-padded visible lesson label found.');
+if (app.includes('Reset Demo')) failures.push('Child-facing Reset Demo still present.');
+
+// Practice Again and mastery workflow
+if (!app.includes("screen = 'practice'")) failures.push('Practice Again screen flow missing.');
+if (!app.includes("if (!correct)")) failures.push('Wrong-answer handling missing.');
+if (!app.includes('showGentleTryAgain(q);')) failures.push('Gentle retry feedback missing.');
+if (!app.includes('return;\n    }\n\n    const entry')) failures.push('Wrong answers may advance; expected return before entry logging.');
+if (!app.includes('session.practiceItems.push(generateQuestion(q.skill')) failures.push('Similar practice generation after practice miss missing.');
+if (!app.includes('Practice Again • ${left} left')) failures.push('Practice Again visible progress missing.');
+if (!app.includes('All practice items were answered correctly')) failures.push('Practice completion confirmation missing.');
+if (!app.includes('const canContinue = Boolean(session?.mastered)')) failures.push('Continue button is not mastery-gated.');
+if (!app.includes("${canContinue ? '' : 'disabled'}>Continue to Next Lesson")) failures.push('Continue button disabled state missing.');
+if (!app.includes('Continue to Next Lesson')) failures.push('Continue button text missing.');
+if (!app.includes('End Today’s Session')) failures.push('End Today’s Session missing.');
+
+// Quick Warm-Up rules
+if (!app.includes('function activeWarmup()')) failures.push('Active warm-up selector missing.');
+if (!app.includes('state.manualWarmup')) failures.push('Manual parent warm-up assignment missing.');
+if (!app.includes('state.appRecommendedWarmup')) failures.push('App recommended warm-up missing.');
+if (!app.includes('Parent assignment overrides the app recommendation')) failures.push('Parent override explanation missing.');
+if (!app.includes('If you do nothing, the app uses its recommendation automatically')) failures.push('App default recommendation explanation missing.');
+if (!app.includes('isLevelAssignable')) failures.push('Assignable level locking function missing.');
+if (!app.includes('levelIndex <= currentIndex')) failures.push('Future level locking / lower-level availability logic missing.');
+if (!qgen.includes('generateQuestionsForWarmup')) failures.push('Quick Warm-Up question generator missing.');
+
+// Parent view and daily record
+if (!app.includes('Parent Settings')) failures.push('Parent Settings section missing.');
+if (!app.includes('Reset Student Progress')) failures.push('Parent reset button missing.');
+if (!app.includes('Are you sure you want to reset all student progress')) failures.push('Parent reset confirmation missing.');
+if (!app.includes('Daily Work Record')) failures.push('Daily Work Record missing.');
+if (!app.includes('Lesson Score')) failures.push('Clear Daily Record column Lesson Score missing.');
+if (!app.includes('Practice Needed')) failures.push('Clear Daily Record column Practice Needed missing.');
+if (!app.includes('Practice Result')) failures.push('Clear Daily Record column Practice Result missing.');
+if (!app.includes('Next Practice')) failures.push('Daily Record Next Practice missing.');
+if (app.includes('First Try')) failures.push('Confusing First Try column still present.');
+if (!app.includes('id="fromDate"') || !app.includes('id="toDate"')) failures.push('Date picker filters missing.');
+if (!app.includes('recordLevel')) failures.push('Level filter missing.');
+if (!app.includes('Entire Progress')) failures.push('Entire Progress default/clear filter missing.');
+if (!app.includes('Progress Graph')) failures.push('Progress Graph missing.');
+if (!app.includes('Practice & Repetition Graph')) failures.push('Practice & Repetition Graph missing.');
+if (!css.includes('.chart') || !css.includes('.bar')) failures.push('Graph styles missing.');
+
+// Rules validation
+if (rules.accuracy.finalCorrectedAccuracyRequired !== 1) failures.push('100% corrected accuracy rule not locked.');
+if (!rules.accuracy.practiceAgainMustEndAllCorrect) failures.push('Practice Again all-correct rule not locked.');
+if (!rules.workflow.continueNextLessonOnlyAfterMastery) failures.push('Continue after mastery rule not locked.');
+if (!rules.quickWarmUp.currentAndLowerLevelsAvailable) failures.push('Current/lower level availability rule not locked.');
+if (!rules.quickWarmUp.futureLevelsLocked) failures.push('Future level lock rule not locked.');
+if (!rules.parentView.graphsDefaultToEntireProgress) failures.push('Default entire progress graph rule not locked.');
+if (!rules.parentView.separateProgressAndRepetitionGraphs) failures.push('Separate graph rule not locked.');
 
 try {
   execSync('node src/utils/ruleValidator.js', { cwd: root, stdio: 'pipe' });
 } catch (e) {
   failures.push('Rule validator failed.');
+}
+
+for (const file of ['src/app.js', 'src/engine/questionGenerator.js', 'src/engine/masteryEngine.js', 'src/engine/progressStore.js', 'src/curriculum/level6A.js', 'src/config/levels.js']) {
+  try {
+    execSync(`node --check ${file}`, { cwd: root, stdio: 'pipe' });
+  } catch (e) {
+    failures.push(`Syntax check failed for ${file}.`);
+  }
 }
 
 if (failures.length) {

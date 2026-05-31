@@ -8,22 +8,55 @@ export function evaluateLesson({ answerLog, elapsedMs, lesson }) {
 
   return {
     finalAccuracy,
-    firstTryCorrect: total - wrongFirstTry,
+    lessonScore: `${total - wrongFirstTry}/${total}`,
     wrongFirstTry,
     slowCorrect,
     needsPracticeAgain,
-    mastered: finalAccuracy === 1 && !needsPracticeAgain,
     completed: finalAccuracy === 1,
     elapsedMs,
-    visibleLesson: lesson.displayId,
-    recommendation: makeRecommendation({ wrongFirstTry, slowCorrect, lesson })
+    visibleLesson: lesson.displayId
   };
 }
 
-export function makeRecommendation({ wrongFirstTry, slowCorrect, lesson }) {
-  if (wrongFirstTry > 1) return `Practice ${lesson.title.toLowerCase()} again next session.`;
-  if (slowCorrect > 0) return `Add a short fluency review for ${lesson.title.toLowerCase()}.`;
-  return 'Continue to the next lesson.';
+export function makeNextPracticeRecommendation({ lesson, answerLog, practiceLog, practiceItemCount }) {
+  const wrongFirstTry = answerLog.filter((entry) => entry.wasWrongFirstTry).length;
+  const slowCorrect = answerLog.filter((entry) => entry.wasSlow).length;
+  const practiceRetries = practiceLog.reduce((sum, entry) => sum + (entry.wrongAttempts || 0), 0);
+
+  if (wrongFirstTry > 1 || practiceRetries > 0) {
+    return {
+      message: `Quick Warm-Up recommended for ${lesson.title.toLowerCase()}.`,
+      label: lesson.title,
+      practice: {
+        type: 'lesson_range',
+        level: lesson.level,
+        from: Math.max(1, lesson.lessonNumber - 1),
+        to: lesson.lessonNumber,
+        label: `${lesson.level}-${Math.max(1, lesson.lessonNumber - 1)} to ${lesson.displayId}`,
+        reason: 'Wrong-first-try or repeated practice items'
+      }
+    };
+  }
+
+  if (slowCorrect > 0 || practiceItemCount > 0) {
+    return {
+      message: `Light fluency warm-up recommended for ${lesson.title.toLowerCase()}.`,
+      label: lesson.title,
+      practice: {
+        type: 'skill',
+        level: lesson.level,
+        skill: lesson.skill,
+        label: lesson.title,
+        reason: 'Slow correct answers'
+      }
+    };
+  }
+
+  return {
+    message: 'Continue to the next lesson.',
+    label: 'None',
+    practice: null
+  };
 }
 
 export function practiceIsCleared(practiceLog, totalPracticeItems) {

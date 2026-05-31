@@ -1,10 +1,10 @@
-# Math Stepwise — Phase 2 Rebuilt
+# Math Stepwise — Phase 2 Latest Corrected Build
 
-This is the upload-ready Phase 2 app skeleton with retention workflow and parent controls.
+This is the audited Phase 2 app skeleton with the corrected mastery workflow, retention practice, parent reset, Quick Warm-Up assignment, Daily Work Record filters, and progress/repetition graphs.
 
 ## Upload structure
 
-Upload these items together to GitHub:
+Upload these items at the repository root:
 
 ```txt
 audit/
@@ -15,24 +15,28 @@ package.json
 README.md
 ```
 
-Do not drag the outer extracted folder. Drag the six items above.
+Do not drag the outer folder. Drag the contents inside the extracted folder.
 
-## Included
+## Included in this build
 
-- Student View and Parent View
-- Level dropdown, using clean visible lesson labels like `6A-1`, `6A-13`, `6A-200`
-- Level 6A preview curriculum with 200 generated lesson IDs
-- Practice Again workflow after each lesson/block
-- Practice Again continues until all retention items are correct
-- Practice Again is based on wrong-first-try items, slow correct items, and similar generated items
-- End Today’s Session and Continue to Next Lesson buttons
-- Parent-only Reset Student Progress button
-- Student Information page
-- Daily Work Record with recommendations
-- Parent’s Choice assignment for the next session only
-- No child-facing reset/demo button
+- Student View with visible date and clean lesson labels like `6A-13`
+- Quick Warm-Up before the lesson when app or parent assigns practice
+- Practice Again before ending a session
+- Practice Again continues until all practice items are correct
+- End Today’s Session and Continue to Next Lesson
+- Continue to Next Lesson unlocks only after mastery
+- Parent View with Student Information, Daily Work Record, Warm-Up assignment, and Parent Settings
+- Parent-only Reset Student Progress with confirmation
+- Daily Work Record with date range and level filters
+- Separate Progress Graph and Practice & Repetition Graph
+- Parent can assign Quick Warm-Up by current/lower level and lesson range
+- Future levels are locked in parent assignment
+- App recommendation is used by default when parent does nothing
+- Parent assignment overrides app recommendation
 
-## Local audit
+## Audit
+
+Run:
 
 ```bash
 npm run audit

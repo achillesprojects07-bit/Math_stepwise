@@ -1,26 +1,49 @@
-# Phase 2 Rebuilt Notes
+# Phase 2 Latest Corrected Notes
 
-## Child workflow
+## Locked workflow
 
-1. Child opens Student View.
-2. If a parent assigned practice from a previous review, it appears as `Quick Practice` at the start of the next session.
-3. Child completes the main lesson/block.
-4. The app runs Practice Again based on:
-   - items answered wrong on the first try,
-   - items answered correctly but slowly,
-   - similar generated items from the same skill.
-5. Practice Again continues until every practice item is answered correctly.
-6. Child chooses either:
-   - End Today’s Session
-   - Continue to Next Lesson
+1. Student opens the app.
+2. Student sees today’s date and Today’s Plan.
+3. If there is a Quick Warm-Up, it appears first.
+4. Student completes Today’s Lesson.
+5. Wrong lesson answers must be corrected before moving on.
+6. Practice Again is created from wrong-first-try and slow-correct items.
+7. Practice Again continues until all practice items are correct.
+8. Session end screen appears only after Practice Again is cleared.
+9. Continue to Next Lesson is available only after mastery.
+10. If the child continues, the next lesson is logged under the same date.
 
-## Parent workflow
+## Quick Warm-Up rules
 
-1. Parent reviews Daily Work Record.
-2. App shows recommendations based on first-try mistakes, slow items, and repeated review needs.
-3. Parent may assign Parent’s Choice Practice for the next session.
-4. Parent may reset student progress from Parent View only.
+- Parent manual assignment overrides app recommendation.
+- If parent does nothing, app recommendation becomes the next Quick Warm-Up automatically.
+- If no app recommendation exists, there is no Quick Warm-Up.
+- Future levels are locked.
+- Current and lower/completed levels are available.
 
-## Lesson label UX
+## Daily Work Record
 
-Visible labels use `6A-1`, `6A-2`, `6A-13`, etc. Backend IDs can remain `6A001`, `6A002`, `6A013`.
+The Daily Work Record includes:
+
+- Date
+- Lesson
+- Lesson Score
+- Practice Needed
+- Practice Result
+- Time
+- Final Status
+- Next Practice
+- Recommendation
+
+Filters:
+
+- From date
+- To date
+- Level
+
+Graphs:
+
+- Progress Graph
+- Practice & Repetition Graph
+
+Default graph view is the child’s entire recorded progress.

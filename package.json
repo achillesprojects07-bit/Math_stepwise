@@ -1,7 +1,7 @@
 {
-  "name": "math-stepwise-phase2-retention-parent-reset",
-  "version": "2.2.0",
-  "description": "Phase 2 rebuilt app skeleton with retention Practice Again, parent reset, parent records, and child-friendly lesson labels.",
+  "name": "math-stepwise-phase2-latest-corrected",
+  "version": "2.3.0",
+  "description": "Latest corrected Phase 2 build with mastery-gated continuation, Quick Warm-Up, retention, daily records, filters, graphs, and parent reset.",
   "type": "module",
   "scripts": {
     "audit": "node audit/audit.js",

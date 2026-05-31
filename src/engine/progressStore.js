@@ -1,4 +1,4 @@
-const KEY = 'math_stepwise_progress_v2_2';
+const KEY = 'math_stepwise_progress_v2_latest_corrected';
 
 export const defaultState = {
   student: {
@@ -13,14 +13,17 @@ export const defaultState = {
   mastered: ['6A-1', '6A-2', '6A-3'],
   reviewQueue: [],
   dailyRecords: [],
-  assignedPractice: null
+  appRecommendedWarmup: null,
+  manualWarmup: null,
+  lastCompletedLessonNumber: null
 };
 
 export function loadState() {
   try {
-    return { ...defaultState, ...(JSON.parse(localStorage.getItem(KEY)) || {}) };
+    const saved = JSON.parse(localStorage.getItem(KEY));
+    return saved ? { ...defaultState, ...saved, student: { ...defaultState.student, ...saved.student } } : structuredClone(defaultState);
   } catch {
-    return defaultState;
+    return structuredClone(defaultState);
   }
 }
 
@@ -30,5 +33,5 @@ export function saveState(state) {
 
 export function resetStudentProgress() {
   localStorage.removeItem(KEY);
-  return defaultState;
+  return structuredClone(defaultState);
 }
