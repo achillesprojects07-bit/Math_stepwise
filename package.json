@@ -1,8 +1,9 @@
 {
-  "name": "math-stepwise-phase2-app-skeleton",
-  "version": "2.0.0",
-  "description": "Phase 2 app skeleton and engine for the mastery-based math learning app.",
+  "name": "stepwise-math-phase2",
+  "version": "0.2.1",
   "private": true,
+  "description": "Phase 2 improved audited app skeleton for StepWise Math",
+  "type": "module",
   "scripts": {
     "audit": "node audit/phase2Audit.js",
     "validate:rules": "node src/utils/ruleValidator.js"

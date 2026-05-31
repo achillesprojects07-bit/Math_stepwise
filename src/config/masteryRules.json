@@ -1,57 +1,24 @@
 {
-  "version": "1.0.0",
-  "studentFacingRules": {
-    "showBackendRuleDetails": false,
-    "allowedFeedback": [
-      "Correct!",
-      "Great work!",
-      "Try one more like this.",
-      "Practice again.",
-      "Next lesson unlocked."
-    ],
-    "blockedFeedback": [
-      "SCT failed",
-      "mastery parameter failure",
-      "accuracy condition not satisfied",
-      "promotion requirement failed"
-    ]
+  "version": "phase2-improved",
+  "childFacingRulesHidden": true,
+  "accuracy": {
+    "finalCorrectedAccuracyRequired": 1.0,
+    "mistakesMustBeCorrected": true,
+    "unresolvedMistakesTriggerReview": true
   },
-  "mastery": {
-    "requiresFinalCorrectedAccuracy": 1.0,
-    "requiresCorrectionsCleared": true,
-    "allowFinishAfterTimeExceeded": true,
-    "timeIncludesCorrections": true,
-    "sctBasedLevelsUseTimeAsGate": true,
-    "nonSctLevelsUseTimeAsGate": false
+  "time": {
+    "useSctWhenAvailable": true,
+    "allowFinishAfterTargetTime": true,
+    "overTimeStatus": "completed_needs_fluency",
+    "nonSctLevels": ["ZI", "ZII", "6A", "5A"]
   },
-  "learningBlock": {
-    "targetTimeFormula": "sctSecondsPerWorksheet * worksheetEquivalentCount",
-    "allowOptionalExtraPractice": true,
-    "optionalPracticeCanClearReview": true,
-    "optionalPracticeIsNotRequired": true
+  "promotion": {
+    "needsReviewMustBeCleared": true,
+    "finalLevelMasteryCheckRequired": true,
+    "timedLevelsRequireSctPass": true
   },
-  "statuses": {
-    "notStarted": "Not Started",
-    "inProgress": "In Progress",
-    "mastered": "Mastered",
-    "completedNeedsFluency": "Completed — Needs Fluency",
-    "needsReviewAccuracy": "Needs Review — Accuracy",
-    "needsReviewRepeatedError": "Needs Review — Repeated Error",
-    "levelReady": "Level Ready",
-    "promoted": "Promoted"
-  },
-  "repeatRules": {
-    "repeatIfUncorrectedMistakesRemain": true,
-    "repeatIfTimeExceededOnSctLevel": true,
-    "repeatIfRepeatedSkillErrors": true,
-    "repeatIfAbandoned": true
-  },
-  "promotionRules": {
-    "requiresAllRequiredLessonsCompleted": true,
-    "requiresReviewQueueCleared": true,
-    "requiresFinalLevelMasteryCheck": true,
-    "requiresTimeGateForSctLevels": true,
-    "requiresTimeGateForNonSctLevels": false
-  },
-  "unlockMode": "strict"
+  "views": {
+    "studentView": "simple_encouraging",
+    "parentView": "progress_records_and_readiness"
+  }
 }

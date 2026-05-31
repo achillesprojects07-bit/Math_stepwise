@@ -1,49 +1,41 @@
-function evaluateLessonAttempt(attempt, lessonRules) {
-  const totalQuestions = Number(attempt.totalQuestions || 0);
-  const correctedCorrect = Number(attempt.correctAfterCorrections || 0);
-  const unresolvedErrors = Number(attempt.unresolvedErrors || 0);
-  const elapsedSeconds = Number(attempt.elapsedSeconds || 0);
-  const targetSeconds = lessonRules.targetSeconds === null || lessonRules.targetSeconds === undefined
-    ? null
-    : Number(lessonRules.targetSeconds);
-  const hasSct = Boolean(lessonRules.hasSct);
+export function evaluateLesson({ correctFirstTry, totalQuestions, finalCorrect, totalTimeSeconds, targetTimeSeconds, sctUsed }) {
+  const finalAccuracy = totalQuestions === 0 ? 0 : finalCorrect / totalQuestions;
+  const firstTryAccuracy = totalQuestions === 0 ? 0 : correctFirstTry / totalQuestions;
+  const hasFullCorrectedAccuracy = finalAccuracy === 1;
+  const withinTime = !sctUsed || !targetTimeSeconds || totalTimeSeconds <= targetTimeSeconds;
 
-  if (totalQuestions <= 0) {
-    return { status: 'needs_review_accuracy', mastered: false, reason: 'No questions were completed.' };
-  }
-
-  const finalAccuracy = correctedCorrect / totalQuestions;
-  const isFullyCorrected = finalAccuracy === 1 && unresolvedErrors === 0;
-
-  if (!isFullyCorrected) {
+  if (!hasFullCorrectedAccuracy) {
     return {
       status: 'needs_review_accuracy',
-      mastered: false,
-      reason: 'Some answers still need correction.'
+      childMessage: 'Let’s practice a few more.',
+      parentLabel: 'Needs Review — Accuracy',
+      finalAccuracy,
+      firstTryAccuracy,
+      withinTime
     };
   }
 
-  if (hasSct && targetSeconds !== null && elapsedSeconds > targetSeconds) {
+  if (!withinTime) {
     return {
       status: 'completed_needs_fluency',
-      mastered: false,
-      reason: 'The work was corrected, but needs more fluency practice.'
+      childMessage: 'Good work. We will practice again soon.',
+      parentLabel: 'Completed — Needs Fluency',
+      finalAccuracy,
+      firstTryAccuracy,
+      withinTime
     };
   }
 
   return {
     status: 'mastered',
-    mastered: true,
-    reason: 'Accuracy and timing rules were satisfied.'
+    childMessage: 'Great work!',
+    parentLabel: 'Mastered',
+    finalAccuracy,
+    firstTryAccuracy,
+    withinTime
   };
 }
 
-function canPromoteLevel(levelProgress) {
-  const allLessonsMastered = levelProgress.totalLessons > 0 && levelProgress.masteredLessons === levelProgress.totalLessons;
-  const reviewQueueClear = levelProgress.reviewItems === 0;
-  const finalCheckPassed = Boolean(levelProgress.finalCheckPassed);
-
-  return allLessonsMastered && reviewQueueClear && finalCheckPassed;
+export function canPromoteLevel({ allLessonsMastered, reviewQueueCleared, finalLevelCheckPassed, timedStandardsMet }) {
+  return Boolean(allLessonsMastered && reviewQueueCleared && finalLevelCheckPassed && timedStandardsMet);
 }
-
-module.exports = { evaluateLessonAttempt, canPromoteLevel };

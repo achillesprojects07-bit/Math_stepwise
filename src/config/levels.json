@@ -1,30 +1,11 @@
 {
-  "version": "1.0.0",
   "levels": [
-    { "id": "ZI", "order": 1, "title": "Pencil Skills", "category": "foundational", "hasSct": false, "status": "future" },
-    { "id": "ZII", "order": 2, "title": "Pencil Skills", "category": "foundational", "hasSct": false, "status": "future" },
-    { "id": "6A", "order": 3, "title": "Counting & Number Recognition up to 10", "category": "foundational", "hasSct": false, "status": "phase3", "lessonCount": 200 },
-    { "id": "5A", "order": 4, "title": "Number Reading up to 50", "category": "foundational", "hasSct": false, "status": "future", "lessonCount": 200 },
-    { "id": "4A", "order": 5, "title": "Number Writing", "category": "early_math", "hasSct": true, "status": "future", "lessonCount": 200 },
-    { "id": "3A", "order": 6, "title": "Adding 1, 2, and 3", "category": "early_math", "hasSct": true, "status": "future", "lessonCount": 200 },
-    { "id": "2A", "order": 7, "title": "Adding up to 10", "category": "core_fluency", "hasSct": true, "status": "future", "lessonCount": 200 },
-    { "id": "A", "order": 8, "title": "Addition and Subtraction", "category": "core_fluency", "hasSct": true, "status": "future", "lessonCount": 200 },
-    { "id": "B", "order": 9, "title": "Addition and Subtraction to 100", "category": "core_fluency", "hasSct": true, "status": "future", "lessonCount": 200 },
-    { "id": "C", "order": 10, "title": "Multiplication and Division", "category": "core_fluency", "hasSct": true, "status": "future", "lessonCount": 200 },
-    { "id": "D", "order": 11, "title": "Division and Fractions", "category": "core_fluency", "hasSct": true, "status": "future", "lessonCount": 200 },
-    { "id": "E", "order": 12, "title": "Fraction Operations", "category": "core_fluency", "hasSct": true, "status": "future", "lessonCount": 200 },
-    { "id": "F", "order": 13, "title": "Order of Operations and Decimals", "category": "core_fluency", "hasSct": true, "status": "future", "lessonCount": 200 },
-    { "id": "G", "order": 14, "title": "Algebraic Expressions and Linear Equations", "category": "application", "hasSct": true, "status": "future", "lessonCount": 200 },
-    { "id": "H", "order": 15, "title": "Simultaneous Equations", "category": "application", "hasSct": true, "status": "future", "lessonCount": 200 },
-    { "id": "I", "order": 16, "title": "Factorisation and Quadratics", "category": "application", "hasSct": true, "status": "future", "lessonCount": 200 },
-    { "id": "J", "order": 17, "title": "Advanced Algebra", "category": "advanced", "hasSct": true, "status": "future", "lessonCount": 200 },
-    { "id": "K", "order": 18, "title": "Quadratic Functions", "category": "advanced", "hasSct": true, "status": "future", "lessonCount": 200 },
-    { "id": "L", "order": 19, "title": "Calculus Introduction", "category": "advanced", "hasSct": true, "status": "future", "lessonCount": 200 },
-    { "id": "M", "order": 20, "title": "Trigonometry and Sequences", "category": "advanced", "hasSct": true, "status": "future" },
-    { "id": "N", "order": 21, "title": "Advanced Differentiation", "category": "advanced", "hasSct": true, "status": "future" },
-    { "id": "O", "order": 22, "title": "Advanced Integration", "category": "advanced", "hasSct": true, "status": "future" },
-    { "id": "XV", "order": 23, "title": "Vectors and Figures", "category": "advanced_extension", "hasSct": true, "status": "future" },
-    { "id": "XM", "order": 24, "title": "Transformations and Matrices", "category": "advanced_extension", "hasSct": true, "status": "future" },
-    { "id": "XP", "order": 25, "title": "Statistics and Probability", "category": "advanced_extension", "hasSct": true, "status": "future" }
+    { "id": "6A", "title": "Counting & Number Recognition", "subtitle": "Numbers 1–10", "status": "available", "sctUsed": false, "lessonCount": 200 },
+    { "id": "5A", "title": "Number Reading", "subtitle": "Numbers up to 50", "status": "coming_soon", "sctUsed": false, "lessonCount": 200 },
+    { "id": "4A", "title": "Number Writing", "subtitle": "Trace and write numbers", "status": "coming_soon", "sctUsed": true, "lessonCount": 200 },
+    { "id": "3A", "title": "Adding 1, 2, and 3", "subtitle": "Early addition", "status": "coming_soon", "sctUsed": true, "lessonCount": 200 },
+    { "id": "2A", "title": "Adding up to 10", "subtitle": "Addition fluency", "status": "coming_soon", "sctUsed": true, "lessonCount": 200 },
+    { "id": "A", "title": "Addition & Subtraction", "subtitle": "Arithmetic basics", "status": "coming_soon", "sctUsed": true, "lessonCount": 200 },
+    { "id": "B", "title": "Addition/Subtraction to 100", "subtitle": "2-digit and 3-digit arithmetic", "status": "coming_soon", "sctUsed": true, "lessonCount": 200 }
   ]
 }

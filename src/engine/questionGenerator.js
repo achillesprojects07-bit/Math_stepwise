@@ -1,39 +1,49 @@
-function randomInt(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+export function generate6AQuestion(lessonId = '6A013') {
+  const lessonNumber = Number(lessonId.replace('6A', '')) || 13;
+  if (lessonNumber <= 30) return makeCountingQuestion(5);
+  if (lessonNumber <= 100) return makeCountingQuestion(10);
+  if (lessonNumber <= 150) return makeNumberReadingQuestion(10);
+  return makeDotQuestion(10);
 }
 
-function generateCountingQuestion(maxNumber) {
-  const answer = randomInt(1, maxNumber);
-  const choices = new Set([answer]);
-  while (choices.size < 4) choices.add(randomInt(1, maxNumber));
+function makeCountingQuestion(max) {
+  const answer = Math.max(1, Math.ceil(Math.random() * max));
   return {
-    type: 'multiple_choice_counting',
+    type: 'multiple_choice',
     prompt: 'How many stars?',
     visual: '⭐'.repeat(answer),
     answer,
-    choices: Array.from(choices).sort((a, b) => a - b)
+    choices: makeChoices(answer, max)
   };
 }
 
-function generateNumberReadingQuestion(maxNumber) {
-  const answer = randomInt(1, maxNumber);
-  const choices = new Set([answer]);
-  while (choices.size < 4) choices.add(randomInt(1, maxNumber));
+function makeNumberReadingQuestion(max) {
+  const answer = Math.max(1, Math.ceil(Math.random() * max));
   return {
-    type: 'number_reading',
-    prompt: 'Choose the number shown.',
+    type: 'multiple_choice',
+    prompt: `Find ${answer}`,
     visual: String(answer),
     answer,
-    choices: Array.from(choices).sort((a, b) => a - b)
+    choices: makeChoices(answer, max)
   };
 }
 
-function generateQuestion(skill) {
-  if (skill === 'counting_up_to_5') return generateCountingQuestion(5);
-  if (skill === 'counting_up_to_10') return generateCountingQuestion(10);
-  if (skill === 'number_reading_up_to_10') return generateNumberReadingQuestion(10);
-  if (skill === 'dots_up_to_10') return generateCountingQuestion(10);
-  return generateCountingQuestion(5);
+function makeDotQuestion(max) {
+  const answer = Math.max(1, Math.ceil(Math.random() * max));
+  return {
+    type: 'multiple_choice',
+    prompt: 'How many dots?',
+    visual: '● '.repeat(answer).trim(),
+    answer,
+    choices: makeChoices(answer, max)
+  };
 }
 
-module.exports = { generateQuestion, generateCountingQuestion, generateNumberReadingQuestion };
+function makeChoices(answer, max) {
+  const set = new Set([answer]);
+  while (set.size < 4) {
+    const candidate = Math.max(1, Math.ceil(Math.random() * max));
+    set.add(candidate);
+  }
+  return Array.from(set).sort((a, b) => a - b);
+}

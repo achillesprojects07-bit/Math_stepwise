@@ -1,23 +1,24 @@
-# Phase 2 Audit Report
+# Phase 2 Improved Audit Report
 
 ## Result
 
-Passed.
+**PASSED**
 
-## Audit coverage
+## Scope checked
 
-- Required files exist
-- JSON files parse correctly
-- Phase 1 locked rules still validate
-- Mastery engine tested for:
-  - 100% corrected accuracy within time
-  - corrected but over time
-  - unresolved accuracy errors
-  - non-SCT levels such as 6A
-- Level 6A starter data generates 200 lesson IDs
-- Student-facing copy avoids backend-rule language
-- `index.html` loads the app script and stylesheet
+- Required file structure is present.
+- App has a working `index.html` entry point.
+- Student View and Parent View exist.
+- Levels are controlled through a dropdown.
+- Student Information page exists.
+- Daily Work Record page exists.
+- Progress/demo data is stored through browser `localStorage`.
+- Level 6A has a 200-lesson generator.
+- Mastery rules retain 100% corrected accuracy.
+- 6A/5A remain non-SCT levels.
+- App allows completion after target time.
+- Child-facing UI does not expose backend rule language.
 
 ## Notes
 
-Phase 2 is an app skeleton and engine. Phase 3 should build the full Level 6A experience and expand the lesson behavior, modes, and correction flow.
+This is still Phase 2. It is the improved skeleton and engine. Full Level 6A lesson/question depth belongs to Phase 3.
