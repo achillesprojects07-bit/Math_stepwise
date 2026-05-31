@@ -178,7 +178,33 @@ function progressDots(total,completed){ return `<div class="progressDots">${Arra
 const encouragementLines={ default:['Almost! Try one more time.','Take your time. Count slowly.','You are close. Try once more.','No rush. You can do this.','Keep going. You are learning.'], addition:['Almost! Add carefully.','Take your time with the numbers.','You are close. Try the sum again.','No rush. Count forward slowly.','Keep going. You are learning.'] };
 function encouragementFor(q){ const list=q.mode==='addition'?encouragementLines.addition:encouragementLines.default; return list[Math.min(q.wrongAttempts-1,list.length-1)]; }
 function sequenceDisplay(ans){ return `${ans-2}, ${ans-1}, __, ${ans+1}`; }
-function addendFor(skill){ const m=skill.match(/adding_(\d+)/); if(m) return Number(m[1]); if(skill==='adding_9_10') return 9 + (Math.random()>.5?1:0); if(skill.includes('up_to_10')) return 1+Math.floor(Math.random()*10); if(skill.includes('up_to_7')) return 1+Math.floor(Math.random()*7); if(skill.includes('up_to_5')) return 1+Math.floor(Math.random()*5); if(skill.includes('up_to_3')) return 1+Math.floor(Math.random()*3); return 1+Math.floor(Math.random()*3); }
+function addendFor(skill, idx=1){
+  const m=skill.match(/adding_(\d+)/);
+  if(m) return Number(m[1]);
+  if(skill==='adding_9_10') return idx<=5 ? 9 : 10;
+  const max = skill.includes('up_to_10') ? 10 : skill.includes('up_to_7') ? 7 : skill.includes('up_to_5') ? 5 : skill.includes('up_to_3') ? 3 : 3;
+  return 1 + ((idx - 1) % max);
+}
+function additionBand(lesson){
+  const blockLength = Math.max(1, (lesson.blockTo || lesson.lessonNumber) - (lesson.blockFrom || lesson.lessonNumber) + 1);
+  const positionInBlock = Math.max(0, lesson.lessonNumber - (lesson.blockFrom || lesson.lessonNumber));
+  const bandSize = 5;
+  const maxLeft = Math.max(1, Number(lesson.max || 10));
+  const bandCount = Math.max(1, Math.ceil(maxLeft / bandSize));
+  const lessonsPerBand = Math.max(1, Math.ceil(blockLength / bandCount));
+  const bandIndex = Math.min(bandCount - 1, Math.floor(positionInBlock / lessonsPerBand));
+  const start = 1 + bandIndex * bandSize;
+  const end = Math.min(maxLeft, start + bandSize - 1);
+  return { start, end };
+}
+function smallStepLeftValue(lesson, idx){
+  const { start, end } = additionBand(lesson);
+  const values = Array.from({ length: end - start + 1 }, (_, i) => start + i);
+  const mixedOrder = [1, 3, 0, 4, 2, 5, 6, 7, 8, 9];
+  if(idx <= values.length) return values[idx - 1];
+  const orderIndex = mixedOrder[(idx - values.length - 1) % mixedOrder.length] % values.length;
+  return values[orderIndex];
+}
 function makeQuestion(lesson, idx, source='lesson'){
   let answer=1+((idx*2+lesson.lessonNumber)%Math.max(lesson.max,1));
   let prompt='How many?'; let display=''; let displayClass='objectDisplay'; let type='choice'; let inputMin=1; let inputMax=lesson.max;
@@ -187,7 +213,11 @@ function makeQuestion(lesson, idx, source='lesson'){
   else if(lesson.mode==='number_reading'){ prompt='Choose the matching number.'; display=String(answer); displayClass='numberDisplay'; inputMax=lesson.max; }
   else if(lesson.mode==='sequence'){ answer=Math.max(3, Math.min(lesson.max-1, answer)); prompt='What number is missing?'; display=sequenceDisplay(answer); displayClass='numberDisplay'; type='typed'; }
   else if(lesson.mode==='number_writing'){ prompt='Type this number.'; display=String(answer); displayClass='numberDisplay'; type='typed'; }
-  else if(lesson.mode==='addition'){ const add=addendFor(lesson.skill); const left=Math.max(1, Math.min(lesson.max, 1+((idx+lesson.lessonNumber*3)%Math.max(lesson.max,2)))); answer=left+add; prompt='Type the answer.'; display=`${left} + ${add} =`; displayClass='numberDisplay'; type='typed'; inputMax=lesson.max+10; }
+  else if(lesson.mode==='addition'){
+    const add=addendFor(lesson.skill, idx);
+    const left=smallStepLeftValue(lesson, idx);
+    answer=left+add; prompt='Type the answer.'; display=`${left} + ${add} =`; displayClass='numberDisplay'; type='typed'; inputMax=Math.max(lesson.max+10, answer);
+  }
   return { id:`${source}-${lesson.displayId}-${idx}-${Date.now()}-${Math.random()}`, source, level:lesson.level, lessonNumber:lesson.lessonNumber, skill:lesson.skill, mode:lesson.mode, prompt, display, displayClass, answer, choices:safeChoices(answer,inputMin,inputMax), slowThresholdMs: lesson.level==='6A'||lesson.level==='5A'?9000:7000, hadWrongAttempt:false, wrongAttempts:0, shownAt:Date.now(), type };
 }
 function lessonQuestions(lesson){ return Array.from({length:10},(_,i)=>makeQuestion(lesson,i+1,'lesson')); }
