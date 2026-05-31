@@ -4,43 +4,39 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
 const read = p => fs.readFileSync(path.join(root, p), 'utf8');
-const mustExist = [
-  'index.html','README.md','package.json','src/app.js','src/styles.css','src/config/levels.json','src/config/masteryRules.json','src/curriculum/level6A.js','src/engine/questionGenerator.js','src/engine/masteryEngine.js','src/engine/progressStore.js','src/utils/ruleValidator.js','audit/PHASE2_AUDIT.md'
-];
-let failures = [];
-for (const f of mustExist) if (!fs.existsSync(path.join(root, f))) failures.push(`Missing file: ${f}`);
+const exists = p => fs.existsSync(path.join(root, p));
 const app = read('src/app.js');
 const css = read('src/styles.css');
-function includes(label, needle, haystack = app) { if (!haystack.includes(needle)) failures.push(`Missing ${label}: ${needle}`); }
-includes('student date', 'Today: ${fmtDate()}');
-includes('parent gate', "screen === 'parentGate'");
-includes('parent settings compact screen', 'function renderParentSettings');
-includes('editable student info form', 'data-action="saveStudentInfo"');
-includes('student info save handler', "action === 'saveStudentInfo'");
-includes('reset warning screen', 'function renderResetConfirm');
-includes('reset clears old keys', 'Object.keys(localStorage).filter');
-includes('app recommendation details', 'Lessons:</strong>');
-includes('automatic recommendation wording', 'used automatically');
-includes('manual assignment overrides wording', 'Parent assignment overrides');
-if (/look/i.test(app) || /ready/i.test(app)) failures.push('Removed child prompt wording still exists.');
-includes('varied encouragement feedback', 'encouragementFor(q)');
-includes('visual progress dots', 'function progressDots');
-includes('line graphs', 'polyline');
-includes('future levels locked', "!isAssignable(l.id)?'disabled'");
-
-if (app.includes('id="currentLevel"') || app.includes("id='currentLevel'")) failures.push('Current Level is still editable in Student Information.');
-if (app.includes('id="currentLessonNumber"') || app.includes("id='currentLessonNumber'")) failures.push('Current Lesson is still editable in Student Information.');
-includes('current level read-only field', 'Current Level</span><strong>${state.student.currentLevel}</strong>');
-includes('current lesson read-only field', 'Current Lesson</span><strong>${currentLesson().displayId}</strong>');
-includes('student home current level read-only', '<h2>Current Level</h2><p class="bigLabel">${state.student.currentLevel}</p>');
-
-if (app.includes('Try ${q.wrongAttempts')) failures.push('Child-facing attempt count still exists.');
-if (app.includes('Review today’s tricky items')) failures.push('Vague app recommendation remains.');
-if (!css.includes('.progressDot.done')) failures.push('Missing visual progress dot styling.');
-if (!app.includes('while (set.size < Math.min(4, max - min + 1))')) failures.push('Multiple-choice generator bounded loop check missing.');
-if (failures.length) {
-  console.error('AUDIT FAILED');
-  failures.forEach(f => console.error('-', f));
+const curriculum = read('src/curriculum/level6A.js');
+const checks = [];
+function check(name, pass) { checks.push({ name, pass: Boolean(pass) }); }
+['index.html','README.md','package.json','src/app.js','src/styles.css','src/curriculum/level6A.js','docs/PHASE3_LEVEL_6A.md'].forEach(f => check(`Required file: ${f}`, exists(f)));
+check('Full 6A lesson array length 200 is defined', /Array\.from\(\{ length: 200 \}/.test(app) && /Array\.from\(\{ length: 200 \}/.test(curriculum));
+check('20 Level 6A blocks are defined', (curriculum.match(/from:/g)||[]).length === 20);
+check('Visible labels use 6A- format', /displayId: `6A-\$\{/.test(app));
+check('No 6A001 style label hardcoded', !/6A0\d\d/.test(app + curriculum));
+check('Student home has today date', /Today: \$\{fmtDate\(\)\}/.test(app));
+check('Separate Progress Map exists', /Level 6A Progress Map/.test(app));
+check('Progress map groups units with details', /unitDetails/.test(app) && /level6ABlocks\.map/.test(app));
+check('Start action exists', /data-action="start"/.test(app) && /function startToday/.test(app));
+check('Parent gate exists', /Parent Code/.test(app) && /DEFAULT_PARENT_CODE = '1234'/.test(app));
+check('Parent reset confirmation exists', /Reset student progress\?/.test(app) && /Yes, Reset Progress/.test(app));
+check('Student info edit exists and current lesson is read-only', /Edit Student Info/.test(app) && /Auto-updated after mastery/.test(app));
+check('Practice Again keeps item active on wrong answers', /if \(!correct\)[\s\S]*return;/.test(app));
+check('Practice Again uses visual progress dots', /progressDots\(total, completed\)/.test(app));
+check('Continue to next lesson gated by mastery', /if \(!session\?\.mastered\) return/.test(app));
+check('App recommendation automatic if parent does nothing', /This will be used automatically/.test(app));
+check('Future levels locked; current and lower available', /isAssignable\(id\).*<=/.test(app));
+check('Daily record has filters and line graphs', /data-filter="from"/.test(app) && /data-filter="to"/.test(app) && /lineChart/.test(app));
+check('No removed secondary prompt words in child feedback', !/(look again|when you are ready|choose again when you are ready|Try \d|Attempt \d)/i.test(app));
+check('Multiple-choice generator is bounded', /safeChoices/.test(app) && /while \(set\.size < Math\.min\(4, max - min \+ 1\)\)/.test(app));
+check('Question modes include objects, numbers, and dots', /count_objects/.test(app) && /number_reading/.test(app) && /dot_recognition/.test(app));
+check('CSS includes non-wrapping compact lesson map support', /compactMap/.test(css) && /unitDetails/.test(css));
+const failed = checks.filter(c => !c.pass);
+console.table(checks);
+if (failed.length) {
+  console.error('\nFAILED CHECKS:');
+  failed.forEach(f => console.error('- ' + f.name));
   process.exit(1);
 }
-console.log('AUDIT PASSED: technical and UX clarity checks passed.');
+console.log('\nAll Phase 3 audit checks passed.');

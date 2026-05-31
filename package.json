@@ -1,7 +1,7 @@
 {
-  "name": "math-stepwise-phase2-parent-passcode",
-  "version": "2.6.0",
-  "description": "Phase 2 final workflow with parent passcode reset/change, robust click handling, strict practice again, records and line graphs.",
+  "name": "math-stepwise-phase3-level-6a",
+  "version": "3.0.0",
+  "description": "Phase 3 Level 6A full curriculum build with audited workflow, practice, parent records, and UX clarity.",
   "type": "module",
   "scripts": {
     "audit": "node audit/audit.js"

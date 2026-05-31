@@ -8,13 +8,36 @@ const levels = [
   { id: '6A', title: 'Counting & Number Recognition', status: 'available' },
   ...levelOrder.slice(1).map(id => ({ id, title: 'Coming soon', status: 'locked' }))
 ];
+
+const level6ABlocks = [
+  { from: 1, to: 10, title: 'Counting up to 5 — Part 1', skill: 'counting_1_5', max: 5, mode: 'count_objects' },
+  { from: 11, to: 20, title: 'Counting up to 5 — Part 2', skill: 'counting_1_5', max: 5, mode: 'count_objects' },
+  { from: 21, to: 30, title: 'Counting up to 5 — Part 3', skill: 'counting_1_5', max: 5, mode: 'count_objects' },
+  { from: 31, to: 40, title: 'Counting up to 10 — Part 1', skill: 'counting_1_10', max: 10, mode: 'count_objects' },
+  { from: 41, to: 50, title: 'Counting up to 10 — Part 2', skill: 'counting_1_10', max: 10, mode: 'count_objects' },
+  { from: 51, to: 60, title: 'Counting up to 10 — Part 3', skill: 'counting_1_10', max: 10, mode: 'count_objects' },
+  { from: 61, to: 70, title: 'Counting up to 10 — Part 4', skill: 'counting_1_10', max: 10, mode: 'count_objects' },
+  { from: 71, to: 80, title: 'Counting up to 10 — Part 5', skill: 'counting_1_10', max: 10, mode: 'count_objects' },
+  { from: 81, to: 90, title: 'Counting up to 10 — Part 6', skill: 'counting_1_10', max: 10, mode: 'count_objects' },
+  { from: 91, to: 100, title: 'Counting up to 10 — Part 7', skill: 'counting_1_10', max: 10, mode: 'count_objects' },
+  { from: 101, to: 110, title: 'Number Reading up to 10 — Part 1', skill: 'number_reading_1_10', max: 10, mode: 'number_reading' },
+  { from: 111, to: 120, title: 'Number Reading up to 10 — Part 2', skill: 'number_reading_1_10', max: 10, mode: 'number_reading' },
+  { from: 121, to: 130, title: 'Number Reading up to 10 — Part 3', skill: 'number_reading_1_10', max: 10, mode: 'number_reading' },
+  { from: 131, to: 140, title: 'Number Reading up to 10 — Part 4', skill: 'number_reading_1_10', max: 10, mode: 'number_reading' },
+  { from: 141, to: 150, title: 'Number Reading up to 10 — Part 5', skill: 'number_reading_1_10', max: 10, mode: 'number_reading' },
+  { from: 151, to: 160, title: 'Number of Dots up to 10 — Part 1', skill: 'dot_recognition_1_10', max: 10, mode: 'dot_recognition' },
+  { from: 161, to: 170, title: 'Number of Dots up to 10 — Part 2', skill: 'dot_recognition_1_10', max: 10, mode: 'dot_recognition' },
+  { from: 171, to: 180, title: 'Number of Dots up to 10 — Part 3', skill: 'dot_recognition_1_10', max: 10, mode: 'dot_recognition' },
+  { from: 181, to: 190, title: 'Number of Dots up to 10 — Part 4', skill: 'dot_recognition_1_10', max: 10, mode: 'dot_recognition' },
+  { from: 191, to: 200, title: 'Number of Dots up to 10 — Part 5', skill: 'dot_recognition_1_10', max: 10, mode: 'dot_recognition' }
+];
+function blockForLesson(n) { return level6ABlocks.find(b => n >= b.from && n <= b.to) || level6ABlocks[0]; }
 const lessons = Array.from({ length: 200 }, (_, i) => {
   const n = i + 1;
-  const title = n <= 30 ? 'Counting up to 5' : n <= 100 ? 'Counting up to 10' : n <= 150 ? 'Number Reading up to 10' : 'Dot Recognition up to 10';
-  const max = n <= 30 ? 5 : 10;
-  const skill = n <= 30 ? 'counting_1_5' : n <= 100 ? 'counting_1_10' : n <= 150 ? 'number_reading_1_10' : 'dot_recognition_1_10';
-  return { level: '6A', lessonNumber: n, displayId: `6A-${n}`, title, max, skill };
+  const b = blockForLesson(n);
+  return { level: '6A', lessonNumber: n, displayId: `6A-${n}`, title: b.title.replace(/ — Part \d+$/, ''), blockTitle: b.title, max: b.max, skill: b.skill, mode: b.mode, blockFrom: b.from, blockTo: b.to };
 });
+
 
 const defaultState = () => ({
   student: {
@@ -83,7 +106,9 @@ function activeWarmup() {
   if (state.appRecommendedWarmup) return { ...state.appRecommendedWarmup, source: 'App recommendation' };
   return null;
 }
+const objectSets = ['⭐', '🍎', '🔵', '🌸', '🟡', '🐟'];
 function displayDots(n) { return Array.from({ length: n }, () => '●').join(' '); }
+function displayObjects(n, idx = 0) { return Array.from({ length: n }, () => objectSets[idx % objectSets.length]).join(' '); }
 function progressDots(total, completed) {
   return `<div class="progressDots" aria-label="practice progress">${Array.from({ length: Math.max(1,total) }, (_, i) => `<span class="progressDot ${i < completed ? 'done' : ''}"></span>`).join('')}</div>`;
 }
@@ -145,14 +170,19 @@ function safeChoices(answer, min, max) {
 }
 function makeQuestion(lesson, idx, source = 'lesson') {
   const answer = 1 + ((idx * 2 + lesson.lessonNumber) % lesson.max);
-  const prompt = lesson.skill.includes('number_reading') ? `Choose ${answer}.` : 'How many?';
-  const display = lesson.skill.includes('number_reading') ? String(answer) : displayDots(answer);
+  const isNumber = lesson.mode === 'number_reading';
+  const isDot = lesson.mode === 'dot_recognition';
+  const prompt = isNumber ? 'Choose the matching number.' : 'How many?';
+  const display = isNumber ? String(answer) : isDot ? displayDots(answer) : displayObjects(answer, idx + lesson.lessonNumber);
+  const displayClass = isNumber ? 'numberDisplay' : isDot ? 'dotDisplay' : 'objectDisplay';
   return {
     id: `${source}-${lesson.displayId}-${idx}-${Date.now()}`,
     source,
     skill: lesson.skill,
+    mode: lesson.mode,
     prompt,
     display,
+    displayClass,
     answer,
     choices: safeChoices(answer, 1, lesson.max),
     slowThresholdMs: lesson.max <= 5 ? 6500 : 9000,
@@ -176,7 +206,7 @@ function practiceItemsFrom(log) {
     q.answer = entry.answer;
     q.display = entry.display;
     q.choices = safeChoices(q.answer, 1, base.max);
-    q.prompt = 'Try this one again.';
+    q.prompt = 'Practice this one.';
     return q;
   });
 }
@@ -236,7 +266,7 @@ function startLessonOnly() {
   screen = 'lesson';
 }
 function qHtml(q, label, helper) {
-  return `<section class="card lessonCard"><p class="eyebrow">${label}</p><h1>${q.prompt}</h1><div class="questionDisplay">${q.display}</div><div class="choices">${q.choices.map(c => `<button type="button" class="choice" data-answer="${c}">${c}</button>`).join('')}</div><div class="helper">${helper}</div><div id="feedback"></div></section>`;
+  return `<section class="card lessonCard"><p class="eyebrow">${label}</p><h1>${q.prompt}</h1><div class="questionDisplay ${q.displayClass || ''}">${q.display}</div><div class="choices">${q.choices.map(c => `<button type="button" class="choice" data-answer="${c}">${c}</button>`).join('')}</div><div class="helper">${helper}</div><div id="feedback"></div></section>`;
 }
 function renderLesson() {
   if (!session) { screen = 'student'; return render(); }
@@ -320,7 +350,14 @@ function renderProgress() {
   const cur = currentLesson();
   const counts = { mastered: 0, review: 0, current: 0, locked: 0 };
   lessons.forEach(l => counts[lessonStatus(l)]++);
-  shell(`<section class="card"><button type="button" class="ghost" data-action="student">← Back to Student Home</button><h1>Level 6A Progress Map</h1><p class="muted">Green = mastered. Amber = review. Purple = current. Gray = locked.</p><div class="legend"><span><b class="dot masteredDot"></b> Mastered</span><span><b class="dot reviewDot"></b> Review</span><span><b class="dot currentDot"></b> Current</span><span><b class="dot lockedDot"></b> Locked</span></div></section><section class="grid four"><div class="card"><p class="muted">Mastered</p><p class="metric">${counts.mastered}</p></div><div class="card"><p class="muted">Review</p><p class="metric">${counts.review}</p></div><div class="card"><p class="muted">Current</p><p class="metric small">${cur.displayId}</p></div><div class="card"><p class="muted">Locked</p><p class="metric">${counts.locked}</p></div></section><section class="card"><div class="hero"><div><h2>Unit 1: Counting up to 5</h2><p class="muted">Lessons 6A-1 to 6A-40 shown in this preview.</p></div><button type="button" class="primary" data-action="start">Start ${cur.displayId}</button></div><div class="lessonMap">${lessons.slice(0,40).map(l => `<button type="button" class="lessonTile ${lessonStatus(l)}" ${lessonStatus(l) === 'current' ? 'data-action="start"' : 'disabled'}>${lessonStatus(l) === 'locked' ? '🔒' : l.displayId}</button>`).join('')}</div></section>`);
+  const unitSections = level6ABlocks.map((block, idx) => {
+    const unitLessons = lessons.filter(l => l.lessonNumber >= block.from && l.lessonNumber <= block.to);
+    return `<details class="unitDetails" ${idx === Math.floor((cur.lessonNumber - 1) / 10) ? 'open' : ''}>
+      <summary><strong>${block.title}</strong><span>${block.from}–${block.to}</span></summary>
+      <div class="lessonMap compactMap">${unitLessons.map(l => `<button type="button" class="lessonTile ${lessonStatus(l)}" ${lessonStatus(l) === 'current' ? 'data-action="start"' : 'disabled'}>${lessonStatus(l) === 'locked' ? '🔒' : l.displayId}</button>`).join('')}</div>
+    </details>`;
+  }).join('');
+  shell(`<section class="card"><button type="button" class="ghost" data-action="student">← Back to Student Home</button><h1>Level 6A Progress Map</h1><p class="muted">Green = mastered. Amber = review. Purple = current. Gray = locked.</p><div class="legend"><span><b class="dot masteredDot"></b> Mastered</span><span><b class="dot reviewDot"></b> Review</span><span><b class="dot currentDot"></b> Current</span><span><b class="dot lockedDot"></b> Locked</span></div></section><section class="grid four"><div class="card"><p class="muted">Mastered</p><p class="metric">${counts.mastered}</p></div><div class="card"><p class="muted">Review</p><p class="metric">${counts.review}</p></div><div class="card"><p class="muted">Current</p><p class="metric small">${cur.displayId}</p></div><div class="card"><p class="muted">Locked</p><p class="metric">${counts.locked}</p></div></section><section class="card"><div class="hero"><div><h2>All Level 6A Lessons</h2><p class="muted">Use this map to see progress. Future lessons stay locked.</p></div><button type="button" class="primary" data-action="start">Start ${cur.displayId}</button></div>${unitSections}</section>`);
 }
 function lessonStatus(l) {
   if (state.mastered.includes(l.displayId)) return 'mastered';
