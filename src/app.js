@@ -38,6 +38,7 @@ let state = loadState();
 let screen = 'student';
 let parentUnlocked = false;
 let session = null;
+let studentInfoEditMode = false;
 let recordFilters = { from: '', to: '', level: 'all' };
 let assignForm = { level: state.student.currentLevel, from: 1, to: 1 };
 
@@ -269,7 +270,7 @@ function chooseAnswer(value) {
     q.hadWrongAttempt = true;
     q.wrongAttempts += 1;
     const fb = document.getElementById('feedback');
-    if (fb) fb.innerHTML = `<div class="feedback"><strong>${encouragementFor(q)}</strong><br><span>Look again when you are ready.</span></div>`;
+    if (fb) fb.innerHTML = `<div class="feedback"><strong>${encouragementFor(q)}</strong></div>`;
     document.querySelectorAll('.choice').forEach(el => {
       if (Number(el.dataset.answer) === chosen) {
         el.classList.remove('shake');
@@ -345,8 +346,28 @@ function renderResetConfirm() {
 }
 
 function renderStudentInfo() {
-  shell(`<section class="card"><button type="button" class="ghost" data-action="parentHome">← Back</button><div class="sectionHeader"><div><h1>Student Information</h1><p class="muted">Edit profile details. Current level and lesson are filled by the app.</p></div><button type="button" class="primary" data-action="saveStudentInfo">Save Student Info</button></div><div class="formGrid studentForm"><label>Student Name <input id="studentName" type="text" value="${escapeAttr(state.student.name)}"></label><label>Date of Enrollment <input id="enrollmentDate" type="date" value="${state.student.enrollmentDate || todayIso()}"></label><label>Starting Level <select id="startingLevel">${levels.map(l=>`<option value="${l.id}" ${state.student.startingLevel===l.id?'selected':''} ${!isAssignable(l.id)?'disabled':''}>${l.id}${isAssignable(l.id)?'':' (Locked)'}</option>`).join('')}</select></label><div class="readOnlyField"><span>Current Level</span><strong>${state.student.currentLevel}</strong><small>Auto-updated by progress</small></div><div class="readOnlyField"><span>Current Lesson</span><strong>${currentLesson().displayId}</strong><small>Auto-updated after mastery</small></div><label>Parent / Guardian <input id="parentName" type="text" value="${escapeAttr(state.student.parentName)}"></label><label class="full">Notes <textarea id="studentNotes" rows="3">${escapeHtml(state.student.notes)}</textarea></label></div><div id="studentInfoMessage" class="muted"></div><p class="muted smallText">Future levels stay locked. Current level and lesson are controlled by the app’s mastery progress.</p></section>`);
+  const editableFields = studentInfoEditMode ? `
+    <div class="formGrid studentForm">
+      <label>Student Name <input id="studentName" type="text" value="${escapeAttr(state.student.name)}" autocomplete="off"></label>
+      <label>Date of Enrollment <input id="enrollmentDate" type="date" value="${state.student.enrollmentDate || todayIso()}"></label>
+      <label>Starting Level <select id="startingLevel">${levels.map(l=>`<option value="${l.id}" ${state.student.startingLevel===l.id?'selected':''} ${!isAssignable(l.id)?'disabled':''}>${l.id}${isAssignable(l.id)?'':' (Locked)'}</option>`).join('')}</select></label>
+      <label>Parent / Guardian <input id="parentName" type="text" value="${escapeAttr(state.student.parentName)}" autocomplete="off"></label>
+      <label class="full">Notes <textarea id="studentNotes" rows="3">${escapeHtml(state.student.notes)}</textarea></label>
+    </div>
+    <div class="buttonRow"><button type="button" class="primary" data-action="saveStudentInfo">Save Student Info</button><button type="button" class="ghost" data-action="cancelStudentInfoEdit">Cancel</button></div>
+  ` : `
+    <div class="profileGrid">
+      <div class="readOnlyField"><span>Student Name</span><strong>${escapeHtml(state.student.name)}</strong></div>
+      <div class="readOnlyField"><span>Date of Enrollment</span><strong>${state.student.enrollmentDate || todayIso()}</strong></div>
+      <div class="readOnlyField"><span>Starting Level</span><strong>${state.student.startingLevel}</strong></div>
+      <div class="readOnlyField"><span>Parent / Guardian</span><strong>${escapeHtml(state.student.parentName)}</strong></div>
+      <div class="readOnlyField full"><span>Notes</span><strong>${escapeHtml(state.student.notes || 'No notes yet')}</strong></div>
+    </div>
+    <div class="buttonRow"><button type="button" class="primary" data-action="editStudentInfo">Edit Student Info</button></div>
+  `;
+  shell(`<section class="card"><button type="button" class="ghost" data-action="parentHome">← Back</button><div class="sectionHeader"><div><h1>Student Information</h1><p class="muted">Parent-editable profile details are separate from progress-controlled placement.</p></div></div><div class="profileGrid"><div class="readOnlyField"><span>Current Level</span><strong>${state.student.currentLevel}</strong><small>Auto-updated by progress</small></div><div class="readOnlyField"><span>Current Lesson</span><strong>${currentLesson().displayId}</strong><small>Auto-updated after mastery</small></div></div>${editableFields}<div id="studentInfoMessage" class="muted"></div><p class="muted smallText">Current level and lesson are read-only because they are controlled by mastery progress.</p></section>`);
 }
+
 function filteredRecords() { return state.dailyRecords.filter(r => (recordFilters.level === 'all' || r.level === recordFilters.level) && (!recordFilters.from || r.date >= recordFilters.from) && (!recordFilters.to || r.date <= recordFilters.to)).sort((a,b) => a.date.localeCompare(b.date)); }
 function renderDailyRecord() {
   const rows = filteredRecords();
@@ -393,7 +414,9 @@ document.addEventListener('click', (e) => {
   if (action === 'continueLesson') { if (!session?.mastered) return; session = null; startLessonOnly(); return render(); }
   if (action === 'unlockParent') { const input = document.getElementById('parentCode'); const error = document.getElementById('codeError'); if (input?.value === state.parentCode) { parentUnlocked = true; screen = 'parent'; render(); } else { error?.classList.remove('hidden'); input?.focus(); } return; }
   if (action === 'parentHome') { screen = 'parent'; return render(); }
-  if (action === 'studentInfo') { screen = 'studentInfo'; return render(); }
+  if (action === 'studentInfo') { studentInfoEditMode = false; screen = 'studentInfo'; return render(); }
+  if (action === 'editStudentInfo') { studentInfoEditMode = true; return renderStudentInfo(); }
+  if (action === 'cancelStudentInfoEdit') { studentInfoEditMode = false; return renderStudentInfo(); }
   if (action === 'saveStudentInfo') {
     const name = document.getElementById('studentName')?.value.trim() || 'Student';
     const enrollmentDate = document.getElementById('enrollmentDate')?.value || todayIso();
@@ -404,9 +427,10 @@ document.addEventListener('click', (e) => {
     state.student = { ...state.student, name, enrollmentDate, startingLevel, parentName, notes };
     assignForm.level = state.student.currentLevel;
     saveState();
+    studentInfoEditMode = false;
+    renderStudentInfo();
     const msg = document.getElementById('studentInfoMessage');
     if (msg) msg.innerHTML = '<span class="successText">Student information saved.</span>';
-    renderStudentInfo();
     return;
   }
   if (action === 'dailyRecord') { screen = 'dailyRecord'; return render(); }
