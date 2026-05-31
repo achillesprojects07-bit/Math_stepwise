@@ -51,6 +51,10 @@ function msToText(ms) {
   return `${Math.floor(s / 60)}m ${String(s % 60).padStart(2, '0')}s`;
 }
 function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
+function escapeHtml(value = '') {
+  return String(value).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] || c));
+}
+function escapeAttr(value = '') { return escapeHtml(value).replace(/'/g, '&#39;'); }
 function loadState() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
@@ -216,7 +220,7 @@ function render() {
 function renderStudent() {
   const lesson = currentLesson();
   const warmup = activeWarmup();
-  shell(`<section class="hero card"><div><p class="eyebrow">Today: ${fmtDate()}</p><h1>Hi, ${state.student.name}</h1><p class="muted">Today’s Plan</p><ol class="planList">${warmup ? `<li><strong>Quick Warm-Up</strong><br><span class="muted">${warmup.label}</span></li>` : ''}<li><strong>Today’s Lesson:</strong> ${lesson.displayId} — ${lesson.title}</li></ol></div><div class="heroActions"><button type="button" class="primary" data-action="start">Start Today’s Work</button><button type="button" class="secondary" data-action="progress">View Progress Map</button></div></section><section class="grid two"><div class="card"><h2>Choose Level</h2><select class="select" data-change="level">${levels.map(l => `<option value="${l.id}" ${l.id === state.student.currentLevel ? 'selected' : ''} ${l.status !== 'available' ? 'disabled' : ''}>${l.id} — ${l.title}${l.status !== 'available' ? ' (Locked)' : ''}</option>`).join('')}</select></div><div class="card"><h2>Current Work</h2><p class="bigLabel">${lesson.displayId}</p><p class="muted">${lesson.title}</p></div></section>`);
+  shell(`<section class="hero card"><div><p class="eyebrow">Today: ${fmtDate()}</p><h1>Hi, ${state.student.name}</h1><p class="muted">Today’s Plan</p><ol class="planList">${warmup ? `<li><strong>Quick Warm-Up</strong><br><span class="muted">${warmup.label}</span></li>` : ''}<li><strong>Today’s Lesson:</strong> ${lesson.displayId} — ${lesson.title}</li></ol></div><div class="heroActions"><button type="button" class="primary" data-action="start">Start Today’s Work</button><button type="button" class="secondary" data-action="progress">View Progress Map</button></div></section><section class="grid two"><div class="card"><h2>Current Level</h2><p class="bigLabel">${state.student.currentLevel}</p><p class="muted">Auto-updated by progress</p></div><div class="card"><h2>Current Work</h2><p class="bigLabel">${lesson.displayId}</p><p class="muted">${lesson.title}</p></div></section>`);
 }
 function startToday() {
   const w = activeWarmup();
@@ -341,7 +345,7 @@ function renderResetConfirm() {
 }
 
 function renderStudentInfo() {
-  shell(`<section class="card"><button type="button" class="ghost" data-action="parentHome">← Back</button><h1>Student Information</h1><div class="infoGrid"><div><span>Student Name</span><strong>${state.student.name}</strong></div><div><span>Date of Enrollment</span><strong>${fmtDate(state.student.enrollmentDate)}</strong></div><div><span>Starting Level</span><strong>${state.student.startingLevel}</strong></div><div><span>Current Level</span><strong>${state.student.currentLevel}</strong></div><div><span>Current Lesson</span><strong>${currentLesson().displayId}</strong></div><div><span>Parent / Guardian</span><strong>${state.student.parentName}</strong></div><div><span>Notes</span><strong>${state.student.notes}</strong></div></div></section>`);
+  shell(`<section class="card"><button type="button" class="ghost" data-action="parentHome">← Back</button><div class="sectionHeader"><div><h1>Student Information</h1><p class="muted">Edit profile details. Current level and lesson are filled by the app.</p></div><button type="button" class="primary" data-action="saveStudentInfo">Save Student Info</button></div><div class="formGrid studentForm"><label>Student Name <input id="studentName" type="text" value="${escapeAttr(state.student.name)}"></label><label>Date of Enrollment <input id="enrollmentDate" type="date" value="${state.student.enrollmentDate || todayIso()}"></label><label>Starting Level <select id="startingLevel">${levels.map(l=>`<option value="${l.id}" ${state.student.startingLevel===l.id?'selected':''} ${!isAssignable(l.id)?'disabled':''}>${l.id}${isAssignable(l.id)?'':' (Locked)'}</option>`).join('')}</select></label><div class="readOnlyField"><span>Current Level</span><strong>${state.student.currentLevel}</strong><small>Auto-updated by progress</small></div><div class="readOnlyField"><span>Current Lesson</span><strong>${currentLesson().displayId}</strong><small>Auto-updated after mastery</small></div><label>Parent / Guardian <input id="parentName" type="text" value="${escapeAttr(state.student.parentName)}"></label><label class="full">Notes <textarea id="studentNotes" rows="3">${escapeHtml(state.student.notes)}</textarea></label></div><div id="studentInfoMessage" class="muted"></div><p class="muted smallText">Future levels stay locked. Current level and lesson are controlled by the app’s mastery progress.</p></section>`);
 }
 function filteredRecords() { return state.dailyRecords.filter(r => (recordFilters.level === 'all' || r.level === recordFilters.level) && (!recordFilters.from || r.date >= recordFilters.from) && (!recordFilters.to || r.date <= recordFilters.to)).sort((a,b) => a.date.localeCompare(b.date)); }
 function renderDailyRecord() {
@@ -390,6 +394,21 @@ document.addEventListener('click', (e) => {
   if (action === 'unlockParent') { const input = document.getElementById('parentCode'); const error = document.getElementById('codeError'); if (input?.value === state.parentCode) { parentUnlocked = true; screen = 'parent'; render(); } else { error?.classList.remove('hidden'); input?.focus(); } return; }
   if (action === 'parentHome') { screen = 'parent'; return render(); }
   if (action === 'studentInfo') { screen = 'studentInfo'; return render(); }
+  if (action === 'saveStudentInfo') {
+    const name = document.getElementById('studentName')?.value.trim() || 'Student';
+    const enrollmentDate = document.getElementById('enrollmentDate')?.value || todayIso();
+    const startingLevel = document.getElementById('startingLevel')?.value || '6A';
+    const parentName = document.getElementById('parentName')?.value.trim() || 'Parent / Guardian';
+    const notes = document.getElementById('studentNotes')?.value.trim() || '';
+    if (!isAssignable(startingLevel)) return;
+    state.student = { ...state.student, name, enrollmentDate, startingLevel, parentName, notes };
+    assignForm.level = state.student.currentLevel;
+    saveState();
+    const msg = document.getElementById('studentInfoMessage');
+    if (msg) msg.innerHTML = '<span class="successText">Student information saved.</span>';
+    renderStudentInfo();
+    return;
+  }
   if (action === 'dailyRecord') { screen = 'dailyRecord'; return render(); }
   if (action === 'assign') { screen = 'assign'; return render(); }
   if (action === 'parentSettings') { screen = 'parentSettings'; return render(); }

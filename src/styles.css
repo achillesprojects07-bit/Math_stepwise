@@ -109,3 +109,11 @@ th { color: #64748b; background: #f8fafc; font-size: 13px; }
 .recommendBox { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 18px; padding: 1rem; margin: 1rem 0; color: #7c2d12; }
 .recommendBox p { margin: .35rem 0; }
 .warningIcon { font-size: 3rem; line-height: 1; margin-bottom: .75rem; }
+
+.sectionHeader{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap}.studentForm label{display:flex;flex-direction:column;gap:.45rem;font-weight:700;color:#334155}.studentForm input,.studentForm select,.studentForm textarea{border:1px solid #dbe3ef;border-radius:14px;padding:.9rem 1rem;font:inherit;background:white;color:#0f172a}.studentForm .full{grid-column:1/-1}.successText{color:#047857;font-weight:800}.errorText{color:#b91c1c;font-weight:800}
+
+.sectionHeader{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap}.studentForm label{display:flex;flex-direction:column;gap:.45rem;font-weight:700;color:#334155}.studentForm input,.studentForm select,.studentForm textarea{border:1px solid #dbe3ef;border-radius:14px;padding:.9rem 1rem;font:inherit;background:white;color:#0f172a}.studentForm .full{grid-column:1/-1}.successText{color:#047857;font-weight:800}.errorText{color:#b91c1c;font-weight:800}
+.readOnlyField { border: 1px solid #e2e8f0; border-radius: 18px; padding: 14px 16px; background: #f8fafc; display: flex; flex-direction: column; gap: 4px; }
+.readOnlyField span { font-size: 0.85rem; color: #64748b; font-weight: 800; }
+.readOnlyField strong { font-size: 1.2rem; color: #0f172a; }
+.readOnlyField small { color: #64748b; }

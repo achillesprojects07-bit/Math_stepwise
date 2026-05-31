@@ -19,7 +19,16 @@ Status: **PASSED**
 - Parent manual Quick Warm-Up overrides the app recommendation.
 - Future levels are locked; current/lower levels remain available.
 - Daily Work Record keeps date filters, level filter, and separate line graphs.
+- Student Information is editable and saves student name, enrollment date, levels, current lesson, guardian name, and notes.
 
 ## Notes
 
 This is still Phase 2: workflow engine and UX. Phase 3 should complete the full Level 6A curriculum generator and lesson variation.
+
+
+## Student Information Auto-Fill Audit
+
+- Confirmed Current Level is read-only and auto-filled by app progress.
+- Confirmed Current Lesson is read-only and auto-filled after mastery.
+- Confirmed parent can still edit Student Name, Date of Enrollment, Starting Level, Parent/Guardian, and Notes.
+- Confirmed Student Home displays Current Level as an app-controlled status, not a selector.
