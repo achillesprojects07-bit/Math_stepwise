@@ -20,3 +20,8 @@ This build adds working early levels: 5A, 4A, 3A, and 2A, while preserving the f
 - App recommendations proceed automatically if parent does nothing
 - Practice Again continues until all items are correct
 - Student-facing wording stays simple and calm
+
+
+## Corrected availability rule
+
+Starting Level now shows all built levels: 6A, 5A, 4A, 3A, and 2A. Future/unbuilt levels are not shown inside the Starting Level dropdown to avoid confusing locked options. Each built early level has an explicit 200-lesson curriculum file under `src/curriculum/`.

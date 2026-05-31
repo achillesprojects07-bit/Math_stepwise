@@ -29,3 +29,8 @@ index.html
 package.json
 README.md
 ```
+
+
+## Phase 4 Content Fix
+
+This corrected build exposes 6A, 5A, 4A, 3A, and 2A as built/available levels. Each level has an explicit 200-lesson curriculum file in `src/curriculum/`, and the Starting Level dropdown shows only built levels, not locked future placeholders.
