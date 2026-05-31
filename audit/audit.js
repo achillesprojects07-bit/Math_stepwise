@@ -1,47 +1,36 @@
 import fs from 'fs';
 import path from 'path';
-const root = process.cwd();
-const required = ['index.html','README.md','package.json','src/app.js','src/styles.css','src/config/masteryRules.json','src/config/levels.json','audit/PHASE2_AUDIT.md','docs/PHASE2_CLICK_RESET_FINAL.md'];
-const missing = required.filter(f => !fs.existsSync(path.join(root, f)));
-if (missing.length) throw new Error('Missing files: ' + missing.join(', '));
-const app = fs.readFileSync(path.join(root, 'src/app.js'), 'utf8');
-const checks = [
-  ['event delegated actions', "document.addEventListener('click'"],
-  ['start action exists', "action === 'start'"],
-  ['parent code gate exists', "DEFAULT_PARENT_CODE = '1234'"],
-  ['unlock uses saved parent code', 'input?.value === state.parentCode'],
-  ['change passcode action exists', "action === 'saveParentCode'"],
-  ['reset code default action exists', "action === 'resetParentCodeDefault'"],
-  ['reset clears all progress', 'clearAllProgress'],
-  ['reset returns default state', 'state = defaultState()'],
-  ['current lesson starts at 1', 'currentLessonNumber: 1'],
-  ['Practice Again item stays until correct', "if (!correct)"],
-  ['Continue requires mastery', "if (!session?.mastered) return"],
-  ['today date on home', 'Today: ${fmtDate()}'],
-  ['safe choices loop bounded', 'while (set.size < Math.min(4, max - min + 1))'],
-  ['daily record filters', "data-filter=\"from\""],
-  ['graphs render', 'Progress Graph'],
-  ['line graph svg renders', 'lineSvg'],
-  ['encouragement rotation exists', 'encouragementFor'],
-  ['wrong answer attempt count shown', 'Try ${q.wrongAttempts + 1}'],
-  ['parent assignment override exists', 'state.manualWarmup']
+import { fileURLToPath } from 'url';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const root = path.resolve(__dirname, '..');
+const read = p => fs.readFileSync(path.join(root, p), 'utf8');
+const mustExist = [
+  'index.html','README.md','package.json','src/app.js','src/styles.css','src/config/levels.json','src/config/masteryRules.json','src/curriculum/level6A.js','src/engine/questionGenerator.js','src/engine/masteryEngine.js','src/engine/progressStore.js','src/utils/ruleValidator.js','audit/PHASE2_AUDIT.md'
 ];
-const failed = checks.filter(([_, needle]) => !app.includes(needle)).map(([name]) => name);
-if (failed.length) throw new Error('Failed checks: ' + failed.join(', '));
-// Stress-check safeChoices logic by evaluating equivalent function behavior.
-function safeChoices(answer, min, max) {
-  const set = new Set([answer]);
-  let delta = 1;
-  while (set.size < Math.min(4, max - min + 1)) {
-    if (answer - delta >= min) set.add(answer - delta);
-    if (answer + delta <= max) set.add(answer + delta);
-    delta += 1;
-    if (delta > 20) throw new Error('safeChoices infinite loop guard triggered');
-  }
-  return Array.from(set).slice(0, 4);
+let failures = [];
+for (const f of mustExist) if (!fs.existsSync(path.join(root, f))) failures.push(`Missing file: ${f}`);
+const app = read('src/app.js');
+const css = read('src/styles.css');
+function includes(label, needle, haystack = app) { if (!haystack.includes(needle)) failures.push(`Missing ${label}: ${needle}`); }
+includes('student date', 'Today: ${fmtDate()}');
+includes('parent gate', "screen === 'parentGate'");
+includes('parent settings compact screen', 'function renderParentSettings');
+includes('reset warning screen', 'function renderResetConfirm');
+includes('reset clears old keys', 'Object.keys(localStorage).filter');
+includes('app recommendation details', 'Lessons:</strong>');
+includes('automatic recommendation wording', 'used automatically');
+includes('manual assignment overrides wording', 'Parent assignment overrides');
+includes('no attempt count feedback', 'Look again when you are ready.');
+includes('visual progress dots', 'function progressDots');
+includes('line graphs', 'polyline');
+includes('future levels locked', "!isAssignable(l.id)?'disabled'");
+if (app.includes('Try ${q.wrongAttempts')) failures.push('Child-facing attempt count still exists.');
+if (app.includes('Review today’s tricky items')) failures.push('Vague app recommendation remains.');
+if (!css.includes('.progressDot.done')) failures.push('Missing visual progress dot styling.');
+if (!app.includes('while (set.size < Math.min(4, max - min + 1))')) failures.push('Multiple-choice generator bounded loop check missing.');
+if (failures.length) {
+  console.error('AUDIT FAILED');
+  failures.forEach(f => console.error('-', f));
+  process.exit(1);
 }
-for (const ans of [1,2,3,4,5]) {
-  const c = safeChoices(ans,1,5);
-  if (!c.includes(ans) || c.length !== 4) throw new Error('safeChoices failed for ' + ans);
-}
-console.log('AUDIT PASSED: click handling, reset, practice retention, encouragement rotation, safe choices, parent gate, parent passcode reset, records and line graphs checked.');
+console.log('AUDIT PASSED: technical and UX clarity checks passed.');

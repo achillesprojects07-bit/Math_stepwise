@@ -79,6 +79,9 @@ function activeWarmup() {
   return null;
 }
 function displayDots(n) { return Array.from({ length: n }, () => '●').join(' '); }
+function progressDots(total, completed) {
+  return `<div class="progressDots" aria-label="practice progress">${Array.from({ length: Math.max(1,total) }, (_, i) => `<span class="progressDot ${i < completed ? 'done' : ''}"></span>`).join('')}</div>`;
+}
 const encouragementLines = {
   counting_1_5: [
     'Almost! Count each one slowly.',
@@ -174,7 +177,21 @@ function practiceItemsFrom(log) {
 }
 function recommendationFrom(record) {
   if (record.practiceItemCount > 0 || record.wrongFirstTry > 0 || record.slowCorrect > 0) {
-    return { type: 'lesson_range', level: '6A', from: Math.max(1, state.student.currentLessonNumber - 1), to: state.student.currentLessonNumber, label: 'Review today’s tricky items' };
+    const lesson = session?.lesson || currentLesson();
+    const reasons = [];
+    if (record.wrongFirstTry) reasons.push(`${record.wrongFirstTry} wrong-first-try item${record.wrongFirstTry === 1 ? '' : 's'}`);
+    if (record.slowCorrect) reasons.push(`${record.slowCorrect} slow correct item${record.slowCorrect === 1 ? '' : 's'}`);
+    if (record.practiceItemCount) reasons.push(`${record.practiceItemCount} Quick Practice item${record.practiceItemCount === 1 ? '' : 's'}`);
+    return {
+      type: 'lesson_range',
+      level: lesson.level,
+      from: lesson.lessonNumber,
+      to: lesson.lessonNumber,
+      label: `${lesson.displayId}: ${lesson.title}`,
+      lessons: [lesson.displayId],
+      skills: [lesson.title],
+      reason: reasons.join(' • ')
+    };
   }
   return null;
 }
@@ -190,6 +207,8 @@ function render() {
   if (screen === 'progress') return renderProgress();
   if (screen === 'parentGate') return renderParentGate();
   if (screen === 'parent') return renderParent();
+  if (screen === 'parentSettings') return renderParentSettings();
+  if (screen === 'resetConfirm') return renderResetConfirm();
   if (screen === 'studentInfo') return renderStudentInfo();
   if (screen === 'dailyRecord') return renderDailyRecord();
   if (screen === 'assign') return renderAssign();
@@ -212,7 +231,7 @@ function startLessonOnly() {
   screen = 'lesson';
 }
 function qHtml(q, label, helper) {
-  return `<section class="card lessonCard"><p class="eyebrow">${label}</p><h1>${q.prompt}</h1><div class="questionDisplay">${q.display}</div><div class="choices">${q.choices.map(c => `<button type="button" class="choice" data-answer="${c}">${c}</button>`).join('')}</div><p class="muted">${helper}</p><div id="feedback"></div></section>`;
+  return `<section class="card lessonCard"><p class="eyebrow">${label}</p><h1>${q.prompt}</h1><div class="questionDisplay">${q.display}</div><div class="choices">${q.choices.map(c => `<button type="button" class="choice" data-answer="${c}">${c}</button>`).join('')}</div><div class="helper">${helper}</div><div id="feedback"></div></section>`;
 }
 function renderLesson() {
   if (!session) { screen = 'student'; return render(); }
@@ -230,8 +249,9 @@ function renderPractice() {
   if (!session) { screen = 'student'; return render(); }
   const q = session.practiceItems[session.index];
   if (!q) return finishPractice();
-  const left = session.practiceItems.length - session.index;
-  shell(qHtml(q, `Practice Again • ${left} left`, 'Let’s clear each item correctly.'));
+  const total = session.practiceItems.length;
+  const completed = session.index;
+  shell(qHtml(q, 'Practice Again', `${progressDots(total, completed)}<p class="muted">Let’s practice a few together.</p>`));
 }
 function chooseAnswer(value) {
   if (!session) return;
@@ -245,7 +265,7 @@ function chooseAnswer(value) {
     q.hadWrongAttempt = true;
     q.wrongAttempts += 1;
     const fb = document.getElementById('feedback');
-    if (fb) fb.innerHTML = `<div class="feedback"><strong>${encouragementFor(q)}</strong><br><span>Try ${q.wrongAttempts + 1}. The question is still active.</span></div>`;
+    if (fb) fb.innerHTML = `<div class="feedback"><strong>${encouragementFor(q)}</strong><br><span>Look again when you are ready.</span></div>`;
     document.querySelectorAll('.choice').forEach(el => {
       if (Number(el.dataset.answer) === chosen) {
         el.classList.remove('shake');
@@ -277,7 +297,7 @@ function finishPractice() {
   const practiceRetries = session.practiceLog.reduce((s, e) => s + e.wrongAttempts, 0);
   const record = { date: session.date, displayDate: fmtDate(session.date), level: session.lesson.level, lesson: session.lesson.displayId, lessonScore, practiceNeeded: practiceItemCount ? `Yes — ${practiceItemCount} item${practiceItemCount === 1 ? '' : 's'}` : 'No', practiceResult: practiceItemCount ? (practiceRetries ? 'Cleared after repeats' : 'Cleared') : 'Not needed', time: msToText(elapsedMs), timeMs: elapsedMs, finalStatus: 'Mastered', nextPractice: 'None', recommendation: 'Continue to next lesson.', wrongFirstTry, slowCorrect, practiceItemCount, mastered: true };
   const reco = recommendationFrom(record);
-  if (reco) { state.appRecommendedWarmup = reco; record.nextPractice = reco.label; record.recommendation = `${reco.label} will appear as Quick Warm-Up next session.`; }
+  if (reco) { state.appRecommendedWarmup = reco; record.nextPractice = reco.label; record.recommendation = `${reco.label} will appear automatically as Quick Warm-Up next session.`; }
   else state.appRecommendedWarmup = null;
   state.dailyRecords.unshift(record);
   if (!state.mastered.includes(session.lesson.displayId)) state.mastered.push(session.lesson.displayId);
@@ -309,8 +329,17 @@ function renderParentGate() {
 }
 function renderParent() {
   const warmup = activeWarmup();
-  shell(`<section class="hero card"><div><p class="eyebrow">Parent View</p><h1>${state.student.name}'s Progress</h1><p class="muted">Review records, assign next-session Quick Warm-Up, or reset progress.</p></div><div class="heroActions"><button type="button" class="ghost" data-action="studentInfo">Student Information</button><button type="button" class="ghost" data-action="dailyRecord">Daily Work Record</button><button type="button" class="ghost" data-action="assign">Assign Warm-Up</button></div></section><section class="grid three"><div class="card"><p class="muted">Mastered</p><p class="metric">${state.mastered.length}</p></div><div class="card"><p class="muted">Records</p><p class="metric">${state.dailyRecords.length}</p></div><div class="card"><p class="muted">Next Quick Warm-Up</p><p class="metric small">${warmup ? `${warmup.label}<br><span>${warmup.source}</span>` : 'None'}</p></div></section><section class="card"><h2>Parent Settings</h2><p class="muted">Parent-only controls are kept here.</p><div class="settingsGrid"><div class="settingsBox"><h3>Change Parent Passcode</h3><p class="muted">Use a simple code that the child will not know.</p><label>Current Code <input id="currentParentCode" class="codeInput smallInput" type="password" inputmode="numeric" autocomplete="off"></label><label>New Code <input id="newParentCode" class="codeInput smallInput" type="password" inputmode="numeric" autocomplete="off"></label><label>Confirm New Code <input id="confirmParentCode" class="codeInput smallInput" type="password" inputmode="numeric" autocomplete="off"></label><div id="passcodeMessage" class="muted"></div><div class="actions left"><button type="button" class="primary" data-action="saveParentCode">Save New Code</button><button type="button" class="secondary" data-action="resetParentCodeDefault">Reset to 1234</button></div></div><div class="settingsBox dangerZone"><h3>Reset Student Progress</h3><p class="muted">Clears progress saved on this device and returns the student to 6A-1.</p><button type="button" class="danger" data-action="reset">Reset Student Progress</button></div></div></section>`);
+  shell(`<section class="hero card"><div><p class="eyebrow">Parent View</p><h1>${state.student.name}'s Progress</h1><p class="muted">Review records, recommendations, and next-session Quick Warm-Up.</p></div><div class="heroActions"><button type="button" class="ghost" data-action="studentInfo">Student Information</button><button type="button" class="ghost" data-action="dailyRecord">Daily Work Record</button><button type="button" class="ghost" data-action="assign">Assign Warm-Up</button><button type="button" class="ghost" data-action="parentSettings">⚙ Parent Settings</button></div></section><section class="grid three"><div class="card"><p class="muted">Mastered</p><p class="metric">${state.mastered.length}</p></div><div class="card"><p class="muted">Records</p><p class="metric">${state.dailyRecords.length}</p></div><div class="card"><p class="muted">Next Quick Warm-Up</p><p class="metric small">${warmup ? `${warmup.label}<br><span>${warmup.source}</span>` : 'None'}</p></div></section><section class="card"><h2>Latest Recommendation</h2>${state.appRecommendedWarmup ? `<div class="recommendBox"><p><strong>Lessons:</strong> ${state.appRecommendedWarmup.lessons?.join(', ') || state.appRecommendedWarmup.label}</p><p><strong>Skills:</strong> ${state.appRecommendedWarmup.skills?.join(', ') || 'Review practice'}</p><p><strong>Reason:</strong> ${state.appRecommendedWarmup.reason || 'Recent work needs light review.'}</p><p class="muted">This is used automatically unless you assign something else.</p></div>` : `<p class="muted">No extra warm-up is needed right now.</p>`}</section>`);
 }
+
+function renderParentSettings() {
+  shell(`<section class="card"><button type="button" class="ghost" data-action="parentHome">← Back</button><h1>Parent Settings</h1><p class="muted">Rarely used parent-only controls are kept here.</p><div class="settingsGrid"><div class="settingsBox"><h3>Change Parent Passcode</h3><p class="muted">Use a simple code that the child will not know.</p><label>Current Code <input id="currentParentCode" class="codeInput smallInput" type="password" inputmode="numeric" autocomplete="off"></label><label>New Code <input id="newParentCode" class="codeInput smallInput" type="password" inputmode="numeric" autocomplete="off"></label><label>Confirm New Code <input id="confirmParentCode" class="codeInput smallInput" type="password" inputmode="numeric" autocomplete="off"></label><div id="passcodeMessage" class="muted"></div><div class="actions left"><button type="button" class="primary" data-action="saveParentCode">Save New Code</button><button type="button" class="secondary" data-action="resetParentCodeDefault">Reset Code to 1234</button></div></div><div class="settingsBox dangerZone"><h3>Reset Student Progress</h3><p class="muted">This clears progress saved on this device and returns the student to 6A-1.</p><button type="button" class="danger" data-action="resetConfirm">Reset Student Progress</button></div></div></section>`);
+}
+
+function renderResetConfirm() {
+  shell(`<section class="card center"><div class="warningIcon">⚠️</div><h1>Reset student progress?</h1><p class="muted">This will erase lesson progress, Daily Work Records, Quick Warm-Up assignments, and recommendations saved on this device.</p><div class="actions"><button type="button" class="secondary" data-action="parentSettings">Cancel</button><button type="button" class="danger" data-action="resetNow">Yes, Reset Progress</button></div></section>`);
+}
+
 function renderStudentInfo() {
   shell(`<section class="card"><button type="button" class="ghost" data-action="parentHome">← Back</button><h1>Student Information</h1><div class="infoGrid"><div><span>Student Name</span><strong>${state.student.name}</strong></div><div><span>Date of Enrollment</span><strong>${fmtDate(state.student.enrollmentDate)}</strong></div><div><span>Starting Level</span><strong>${state.student.startingLevel}</strong></div><div><span>Current Level</span><strong>${state.student.currentLevel}</strong></div><div><span>Current Lesson</span><strong>${currentLesson().displayId}</strong></div><div><span>Parent / Guardian</span><strong>${state.student.parentName}</strong></div><div><span>Notes</span><strong>${state.student.notes}</strong></div></div></section>`);
 }
@@ -341,7 +370,9 @@ function renderDailyRecord() {
 function isAssignable(id) { return levelOrder.indexOf(id) <= levelOrder.indexOf(state.student.currentLevel); }
 function renderAssign() {
   const max = 200;
-  shell(`<section class="card"><button type="button" class="ghost" data-action="parentHome">← Back</button><h1>Assign Quick Warm-Up for Next Session</h1><p class="muted">Parent assignment overrides the app recommendation. If you do nothing, the app uses its recommendation automatically.</p><div class="notice">Current app recommendation: ${state.appRecommendedWarmup ? state.appRecommendedWarmup.label : 'None'}</div><div class="formGrid"><label>Level <select data-assign="level">${levels.map(l=>`<option value="${l.id}" ${assignForm.level===l.id?'selected':''} ${!isAssignable(l.id)?'disabled':''}>${l.id} — ${l.title}${isAssignable(l.id)?'':' (Locked)'}</option>`).join('')}</select></label><label>From <select data-assign="from">${Array.from({length:max},(_,i)=>`<option value="${i+1}" ${assignForm.from===i+1?'selected':''}>${assignForm.level}-${i+1}</option>`).join('')}</select></label><label>To <select data-assign="to">${Array.from({length:max},(_,i)=>`<option value="${i+1}" ${assignForm.to===i+1?'selected':''}>${assignForm.level}-${i+1}</option>`).join('')}</select></label></div><div class="actions left"><button type="button" class="primary" data-action="saveAssign">Assign for Next Session</button><button type="button" class="secondary" data-action="clearAssign">Clear Parent Assignment</button></div><p class="muted">Future levels are locked. Current and lower levels stay available.</p></section>`);
+  const reco = state.appRecommendedWarmup;
+  const recoHtml = reco ? `<div class="recommendBox"><h3>App Recommended Quick Warm-Up</h3><p><strong>Lessons:</strong> ${reco.lessons?.join(', ') || reco.label}</p><p><strong>Skills:</strong> ${reco.skills?.join(', ') || 'Review practice'}</p><p><strong>Reason:</strong> ${reco.reason || 'Recent work needs light review.'}</p><p class="muted">This will be used automatically if you do not assign something else.</p></div>` : `<div class="recommendBox"><h3>App Recommended Quick Warm-Up</h3><p class="muted">No app recommendation right now. The next session will start with the regular lesson unless you assign a warm-up.</p></div>`;
+  shell(`<section class="card"><button type="button" class="ghost" data-action="parentHome">← Back</button><h1>Assign Quick Warm-Up for Next Session</h1><p class="muted">Parent assignment overrides the app recommendation. If you do nothing, the app proceeds with its recommendation automatically.</p>${recoHtml}<div class="formGrid"><label>Level <select data-assign="level">${levels.map(l=>`<option value="${l.id}" ${assignForm.level===l.id?'selected':''} ${!isAssignable(l.id)?'disabled':''}>${l.id} — ${l.title}${isAssignable(l.id)?'':' (Locked)'}</option>`).join('')}</select></label><label>From <select data-assign="from">${Array.from({length:max},(_,i)=>`<option value="${i+1}" ${assignForm.from===i+1?'selected':''}>${assignForm.level}-${i+1}</option>`).join('')}</select></label><label>To <select data-assign="to">${Array.from({length:max},(_,i)=>`<option value="${i+1}" ${assignForm.to===i+1?'selected':''}>${assignForm.level}-${i+1}</option>`).join('')}</select></label></div><div class="actions left"><button type="button" class="primary" data-action="saveAssign">Assign for Next Session</button><button type="button" class="secondary" data-action="clearAssign">Clear Parent Assignment</button></div><p class="muted">Future levels are locked. Current and lower levels stay available.</p></section>`);
 }
 
 document.addEventListener('click', (e) => {
@@ -361,6 +392,9 @@ document.addEventListener('click', (e) => {
   if (action === 'studentInfo') { screen = 'studentInfo'; return render(); }
   if (action === 'dailyRecord') { screen = 'dailyRecord'; return render(); }
   if (action === 'assign') { screen = 'assign'; return render(); }
+  if (action === 'parentSettings') { screen = 'parentSettings'; return render(); }
+  if (action === 'resetConfirm') { screen = 'resetConfirm'; return render(); }
+  if (action === 'resetNow') { clearAllProgress(); return; }
   if (action === 'clearFilters') { recordFilters = { from:'', to:'', level:'all' }; return renderDailyRecord(); }
   if (action === 'saveAssign') { const from = Math.min(assignForm.from, assignForm.to); const to = Math.max(assignForm.from, assignForm.to); state.manualWarmup = { type:'lesson_range', level:assignForm.level, from, to, label: `${assignForm.level}-${from}${from===to?'':` to ${assignForm.level}-${to}`}` }; saveState(); screen = 'parent'; return render(); }
   if (action === 'clearAssign') { state.manualWarmup = null; saveState(); screen = 'parent'; return render(); }
@@ -387,7 +421,6 @@ document.addEventListener('click', (e) => {
     ['currentParentCode','newParentCode','confirmParentCode'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     return;
   }
-  if (action === 'reset') { if (confirm('Are you sure you want to reset all student progress on this device?')) clearAllProgress(); return; }
 });
 
 document.addEventListener('change', (e) => {

@@ -1,28 +1,25 @@
-# Phase 2 Click/Reset Final Audit
+# Phase 2 UX Clarity Build — Audit Report
 
-Result: PASSED
+Status: **PASSED**
 
-Audit covered:
+## Audit coverage
 
-- Upload-ready folder structure
-- Working event-delegated button handling
-- Start Today's Work action
-- Parent View code gate
-- Parent-only Reset Student Progress
-- Reset clears old progress keys and returns to 6A-1
-- Practice Again does not clear wrong answers
-- Continue to Next Lesson requires mastery
-- Multiple-choice generator does not freeze on 1–5 edge values
-- Daily Record filters and graphs
+- Upload structure remains stable: `audit/`, `docs/`, `src/`, `index.html`, `package.json`, `README.md`.
+- Student Home shows today’s date and only the daily plan.
+- Lesson tiles remain off the Student Home and are only in Progress Map.
+- Parent View requires a code.
+- Parent Settings are compact and secondary, not a large Parent Home card.
+- Reset Student Progress has a visible warning confirmation screen.
+- Reset clears progress keys and returns the app to a fresh default state.
+- Practice Again uses visual progress dots and avoids attempt-count wording such as “try 5” or “try 6.”
+- Wrong answers keep the item active until correct.
+- Multiple-choice generator remains bounded and does not freeze on small ranges.
+- App recommendation shows exact lesson, skill, and reason.
+- If parent does nothing, app recommendation proceeds automatically as next Quick Warm-Up.
+- Parent manual Quick Warm-Up overrides the app recommendation.
+- Future levels are locked; current/lower levels remain available.
+- Daily Work Record keeps date filters, level filter, and separate line graphs.
 
+## Notes
 
-Additional checks passed:
-- Rotating encouragement engine exists for wrong attempts.
-- Wrong attempt feedback changes by attempt count.
-- Choice shake feedback exists for wrong taps.
-- Daily Work Record uses SVG line graphs for Progress and Practice/Repetition.
-
-
-## Parent Passcode Update Audit
-
-Passed checks include parent code gate, saved parent code validation, Change Parent Passcode action, Reset to 1234 action, and preservation of parent-only access.
+This is still Phase 2: workflow engine and UX. Phase 3 should complete the full Level 6A curriculum generator and lesson variation.

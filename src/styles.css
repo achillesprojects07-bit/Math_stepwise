@@ -102,3 +102,10 @@ th { color: #64748b; background: #f8fafc; font-size: 13px; }
 .errorText { color: #b91c1c; font-weight: 800; }
 .successText { color: #047857; font-weight: 800; }
 .dangerZone { background: #fff7ed; border-color: #fed7aa; }
+.helper { margin-top: 1rem; color: #64748b; font-weight: 700; }
+.progressDots { display: flex; gap: .55rem; align-items: center; justify-content: center; margin: 1rem 0 .35rem; }
+.progressDot { width: 16px; height: 16px; border-radius: 999px; background: #e2e8f0; border: 2px solid #cbd5e1; display: inline-block; }
+.progressDot.done { background: #22c55e; border-color: #16a34a; }
+.recommendBox { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 18px; padding: 1rem; margin: 1rem 0; color: #7c2d12; }
+.recommendBox p { margin: .35rem 0; }
+.warningIcon { font-size: 3rem; line-height: 1; margin-bottom: .75rem; }

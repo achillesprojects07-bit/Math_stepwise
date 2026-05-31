@@ -1,36 +1,37 @@
-# Math Stepwise — Phase 2 Click/Reset Final
+# Math Stepwise — Phase 2 UX Clarity Build
 
-This is the corrected Phase 2 build with robust button handling and reset behavior.
-
-## Upload structure
-
-Upload these six items together to GitHub:
-
-- `audit/`
-- `docs/`
-- `src/`
-- `index.html`
-- `package.json`
-- `README.md`
+This build keeps the Phase 2 workflow engine and improves UX clarity for both student and parent.
 
 ## Included
 
-- Student home with today's date
-- Working Start Today's Work button
-- Separate progress map
-- Parent View protected by parent code (`1234` demo)
-- Parent-only Reset Student Progress
-- Strict Practice Again until all items are correct
-- Daily Work Record with date and level filters
-- Separate progress and repetition graphs
-- Quick Warm-Up logic with app recommendation and parent override
+- Student Home with today’s date and Today’s Plan.
+- Separate Progress Map.
+- Parent code gate.
+- Parent Settings moved into a compact secondary area.
+- Visible reset warning screen.
+- Change/reset parent passcode.
+- Practice Again with visual progress dots, not attempt-count wording.
+- App recommendation shows exact lessons, skills, and reasons.
+- App recommendation is used automatically if parent does nothing.
+- Parent assignment overrides app recommendation.
+- Future levels are locked; current/lower levels stay available.
+- Daily Work Record with filters and separate line graphs.
 
+## Upload structure
 
-## Latest update: Encouragement + Line Graphs
+Upload these six items to GitHub together:
 
-This build adds rotating child-friendly encouragement messages for repeated wrong attempts so the app always feels responsive. It also changes the Daily Work Record visuals to separate line graphs for Progress and Practice/Repetition trends.
+```txt
+audit
+docs
+src
+index.html
+package.json
+README.md
+```
 
+Do not drag the outer extracted folder.
 
-## Parent Passcode
+## Parent code
 
-Parent View is protected by a code. The default is `1234`. In Parent View → Parent Settings, the parent can change the code or reset it back to `1234`. Student View does not show passcode settings.
+Default parent code: `1234`
