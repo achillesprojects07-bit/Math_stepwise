@@ -1,16 +1,39 @@
-# Phase 1 — Rules & Curriculum Logic
+# Math_stepwise
 
-This phase locks the app rules before coding the full learning engine.
+## Phase 2 — App Skeleton / Engine
 
-## Phase 1 Deliverables
+This phase builds the first working app skeleton after the Phase 1 rules were locked.
 
-- `docs/PHASE1_RULES.md` — human-readable rulebook
-- `docs/CURRICULUM_SCOPE.md` — curriculum and level handling plan
-- `src/config/masteryRules.json` — machine-readable mastery, repeat, review, and promotion rules
-- `src/config/levels.json` — level list, status, SCT availability, and level categories
-- `src/utils/ruleValidator.js` — simple validator for the rules/config files
-- `audit/PHASE1_AUDIT.md` — audit report for bugs, errors, broken logic, and missing files
+## What is included
 
-## Locked Principle
+- `index.html` — opens the app directly in a browser
+- `src/app.js` — student view, parent view, level dropdown, lesson map, and lesson runner
+- `src/styles.css` — app styling
+- `src/engine/masteryEngine.js` — mastery and promotion logic
+- `src/engine/questionGenerator.js` — starter question generator
+- `src/engine/progressStore.js` — local progress storage helper
+- `src/data/level6A.js` — generated 6A lesson IDs and starter lesson data
+- `src/config/masteryRules.json` — locked Phase 1 mastery rules
+- `src/config/levels.json` — locked level list and SCT flags
+- `src/utils/ruleValidator.js` — Phase 1 rule validator
+- `docs/PHASE2_APP_ENGINE.md` — Phase 2 notes
+- `audit/PHASE2_AUDIT.md` — audit report
+- `audit/phase2Audit.js` — audit script
+
+## How to open
+
+Open `index.html` in a browser.
+
+## How to audit
+
+Run:
+
+```bash
+npm run audit
+```
+
+This checks required files, validates JSON, tests mastery logic, confirms Level 6A has 200 generated lessons, and checks that child-facing app copy avoids backend-rule wording.
+
+## Locked principle
 
 The rules work behind the scenes. The student-facing app remains simple, encouraging, and uncluttered. Parent/admin view may show more detail, but should still be clean.
