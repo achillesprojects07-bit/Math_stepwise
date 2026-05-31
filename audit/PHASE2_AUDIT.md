@@ -1,28 +1,28 @@
-# Phase 2 Latest Corrected Audit
+# Phase 2 Final Workflow Audit
 
-Status: PASSED
+Audit status: PASSED
 
-Audit coverage:
+## Checked
 
-- Upload-ready structure preserved
-- Student View shows today’s date
-- Visible lessons use clean format such as 6A-13
-- Child-facing Reset Demo is removed
-- Parent-only Reset Student Progress is visible in Parent Settings
-- Reset requires confirmation
-- Wrong lesson answers do not advance until corrected
-- Practice Again is generated from weak items
-- Practice Again continues until all items are correct
-- Wrong Practice Again answers do not clear the item
-- Similar retention item is added after a Practice Again miss
-- Continue to Next Lesson is available only after mastery
-- End Today’s Session is present
-- App recommendation is used automatically if parent does nothing
-- Parent manual Quick Warm-Up overrides app recommendation
-- Future levels are locked, current/lower levels are available
-- Daily Work Record has From/To date filters and Level filter
-- Daily Work Record columns are clear and do not use confusing First Try wording
-- Progress Graph and Practice & Repetition Graph are separate
-- Graphs default to entire progress when filters are blank
-- Rule validator passed
-- JavaScript syntax checks passed
+- Upload structure preserved: audit, docs, src, index.html, package.json, README.md.
+- Student Home shows today's date and no longer shows the lesson tile map by default.
+- Start Today's Work button is present and starts the current lesson flow.
+- Progress Map is separate from Student Home.
+- Progress Map uses lesson status logic and color-coded tile states.
+- Future lessons are locked and cannot be used to jump ahead.
+- Parent View is protected by a parent code gate.
+- Parent-only Reset Student Progress is present in Parent Settings.
+- Reset clears all Math Stepwise localStorage progress keys and returns to Student View.
+- Practice Again stays active until all practice items are answered correctly.
+- Wrong answers do not advance the lesson/practice count until corrected.
+- Continue to Next Lesson only unlocks after mastery.
+- Daily Work Record includes start date, end date, and level filters.
+- Progress and repetition graphs are separate and default to entire progress when filters are blank.
+- Quick Warm-Up uses parent assignment first, otherwise app recommendation.
+- Future levels are locked in warm-up assignment; current/lower levels remain available.
+- Syntax checks passed for app and engine files.
+- Rule validator passed.
+
+## Known scope note
+
+This is still Phase 2: app skeleton/workflow. Phase 3 will build the full Level 6A content and more complete production polish.

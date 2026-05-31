@@ -32,6 +32,8 @@ export function saveState(state) {
 }
 
 export function resetStudentProgress() {
-  localStorage.removeItem(KEY);
+  Object.keys(localStorage)
+    .filter((key) => key.startsWith('math_stepwise_progress'))
+    .forEach((key) => localStorage.removeItem(key));
   return structuredClone(defaultState);
 }

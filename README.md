@@ -1,43 +1,36 @@
-# Math Stepwise — Phase 2 Latest Corrected Build
+# StepWise Math — Phase 2 Final Workflow Build
 
-This is the audited Phase 2 app skeleton with the corrected mastery workflow, retention practice, parent reset, Quick Warm-Up assignment, Daily Work Record filters, and progress/repetition graphs.
+This upload-ready build completes the Phase 2 app skeleton workflow fixes before Level 6A full content expansion.
 
-## Upload structure
+## Included
 
-Upload these items at the repository root:
+- Student Home with visible date and clean Today's Plan.
+- Start Today's Work button that opens the current work.
+- Lesson map moved to a separate Progress Map screen.
+- Progress Map uses status colors and locks future lessons.
+- Parent View is protected by a parent code gate.
+- Parent-only Reset Student Progress in Parent Settings.
+- Practice Again continues until all practice items are correct.
+- Continue to Next Lesson unlocks only after mastery.
+- Daily Work Record with date filters, level filter, progress graph, repetition graph, and recommendations.
+- Quick Warm-Up from app recommendation or parent assignment.
+- Future levels locked for assignment, current and lower/completed levels available.
+
+## Upload instructions
+
+Extract the ZIP. Open the extracted folder and upload these six items to GitHub:
 
 ```txt
-audit/
-docs/
-src/
+audit
+docs
+src
 index.html
 package.json
 README.md
 ```
 
-Do not drag the outer folder. Drag the contents inside the extracted folder.
+Do not upload the outer folder.
 
-## Included in this build
+## Parent code
 
-- Student View with visible date and clean lesson labels like `6A-13`
-- Quick Warm-Up before the lesson when app or parent assigns practice
-- Practice Again before ending a session
-- Practice Again continues until all practice items are correct
-- End Today’s Session and Continue to Next Lesson
-- Continue to Next Lesson unlocks only after mastery
-- Parent View with Student Information, Daily Work Record, Warm-Up assignment, and Parent Settings
-- Parent-only Reset Student Progress with confirmation
-- Daily Work Record with date range and level filters
-- Separate Progress Graph and Practice & Repetition Graph
-- Parent can assign Quick Warm-Up by current/lower level and lesson range
-- Future levels are locked in parent assignment
-- App recommendation is used by default when parent does nothing
-- Parent assignment overrides app recommendation
-
-## Audit
-
-Run:
-
-```bash
-npm run audit
-```
+Demo parent code: `1234`

@@ -41,6 +41,23 @@ if (!curriculum.includes('displayId')) failures.push('Visible lesson displayId m
 if (app.includes('6A013')) failures.push('Old zero-padded visible lesson label found.');
 if (app.includes('Reset Demo')) failures.push('Child-facing Reset Demo still present.');
 
+
+// Final workflow UX fixes
+if (!app.includes('function renderParentGate()')) failures.push('Parent code gate missing.');
+if (!app.includes("input.value === '1234'")) failures.push('Parent demo code check missing.');
+if (!app.includes("screen = parentUnlocked ? 'parent' : 'parentGate'")) failures.push('Parent View button is not protected by code gate.');
+if (!app.includes('function renderProgressMap()')) failures.push('Separate Progress Map screen missing.');
+if (!app.includes('View Progress Map')) failures.push('View Progress Map button missing.');
+if (!app.includes('Start Today’s Work')) failures.push('Start Today’s Work button missing.');
+if (!app.includes("screen = 'progressMap'")) failures.push('Progress Map navigation missing.');
+if (!app.includes('Only the current lesson can be started from this map')) failures.push('Progress map anti-jump-ahead note missing.');
+if (!app.includes('lessonStatus(lesson)')) failures.push('Progress map lesson status logic missing.');
+if (!app.includes("return 'locked'")) failures.push('Future lesson locked state missing.');
+if (app.includes('<h2>Level 6A Map</h2>')) failures.push('Lesson map still appears on Student Home.');
+if (!css.includes('white-space: nowrap')) failures.push('Lesson tile no-wrap CSS missing.');
+if (!css.includes('.lessonTile.mastered') || !css.includes('.lessonTile.locked')) failures.push('Color-coded lesson tile status CSS missing.');
+if (!progress.includes("key.startsWith('math_stepwise_progress')")) failures.push('Reset does not clear all Math Stepwise localStorage keys.');
+
 // Practice Again and mastery workflow
 if (!app.includes("screen = 'practice'")) failures.push('Practice Again screen flow missing.');
 if (!app.includes("if (!correct)")) failures.push('Wrong-answer handling missing.');

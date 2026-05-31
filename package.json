@@ -1,7 +1,7 @@
 {
-  "name": "math-stepwise-phase2-latest-corrected",
-  "version": "2.3.0",
-  "description": "Latest corrected Phase 2 build with mastery-gated continuation, Quick Warm-Up, retention, daily records, filters, graphs, and parent reset.",
+  "name": "math-stepwise-phase2-final-workflow",
+  "version": "2.4.0",
+  "description": "Phase 2 final workflow build with parent code gate, clean student home, progress map, strict retention, parent reset, records, filters, graphs, and audited upload structure.",
   "type": "module",
   "scripts": {
     "audit": "node audit/audit.js",

@@ -7,6 +7,7 @@ import { levels, levelOrder } from './config/levels.js';
 const app = document.getElementById('app');
 let state = loadState();
 let screen = 'student';
+let parentUnlocked = false;
 let selectedLesson = lessonByNumber(state.student.currentLessonNumber);
 let session = null;
 let recordFilters = { from: '', to: '', level: 'all' };
@@ -51,7 +52,9 @@ function render() {
   if (screen === 'practice') renderPracticeAgain();
   if (screen === 'warmup') renderWarmup();
   if (screen === 'endChoice') renderEndChoice();
+  if (screen === 'parentGate') renderParentGate();
   if (screen === 'parent') renderParent();
+  if (screen === 'progressMap') renderProgressMap();
   if (screen === 'studentInfo') renderStudentInfo();
   if (screen === 'dailyRecord') renderDailyRecord();
   if (screen === 'assignPractice') renderAssignPractice();
@@ -71,8 +74,8 @@ function shell(content) {
     </header>
     <main>${content}</main>
   `;
-  document.getElementById('studentBtn').onclick = () => { screen = 'student'; render(); };
-  document.getElementById('parentBtn').onclick = () => { screen = 'parent'; render(); };
+  document.getElementById('studentBtn').onclick = () => { parentUnlocked = false; screen = 'student'; render(); };
+  document.getElementById('parentBtn').onclick = () => { screen = parentUnlocked ? 'parent' : 'parentGate'; render(); };
 }
 
 function renderStudentHome() {
@@ -84,20 +87,21 @@ function renderStudentHome() {
         <h1>Hi, ${state.student.name}</h1>
         <p class="muted">Today’s Plan</p>
         <ol class="planList">
-          ${warmup ? `<li><strong>Quick Warm-Up</strong></li>` : ''}
+          ${warmup ? `<li><strong>Quick Warm-Up</strong><br><span class="muted">${warmup.label}</span></li>` : ''}
           <li><strong>Today’s Lesson:</strong> ${selectedLesson.displayId} — ${selectedLesson.title}</li>
         </ol>
       </div>
       <div class="heroActions">
         ${warmup ? `<div class="notice smallNotice">Quick Warm-Up is ready.</div>` : ''}
-        <button class="primary" id="startLesson">Start</button>
+        <button class="primary" id="startLesson">Start Today’s Work</button>
+        <button class="secondary" id="viewProgressMap">View Progress Map</button>
       </div>
     </section>
     <section class="grid two">
       <div class="card">
         <h2>Choose Level</h2>
         <select class="select" id="levelSelect">
-          ${levels.map(level => `<option ${level.id === state.student.currentLevel ? 'selected' : ''} ${level.status !== 'available' ? 'disabled' : ''}>${level.id} — ${level.title}${level.status !== 'available' ? ' (Coming soon)' : ''}</option>`).join('')}
+          ${levels.map(level => `<option value="${level.id}" ${level.id === state.student.currentLevel ? 'selected' : ''} ${level.status !== 'available' ? 'disabled' : ''}>${level.id} — ${level.title}${level.status !== 'available' ? ' (Coming soon)' : ''}</option>`).join('')}
         </select>
       </div>
       <div class="card">
@@ -106,19 +110,16 @@ function renderStudentHome() {
         <p class="muted">${selectedLesson.title}</p>
       </div>
     </section>
-    <section class="card">
-      <h2>Level 6A Map</h2>
-      <p class="muted">Showing the first 40 lessons for this preview.</p>
-      <div class="lessonMap">${level6ALessons.slice(0, 40).map(l => `<button class="lessonTile ${l.lessonNumber === selectedLesson.lessonNumber ? 'current' : ''}" data-lesson="${l.lessonNumber}">${l.displayId}</button>`).join('')}</div>
-    </section>
   `);
   document.getElementById('startLesson').onclick = startSession;
-  document.querySelectorAll('.lessonTile').forEach(btn => btn.onclick = () => {
-    selectedLesson = lessonByNumber(btn.dataset.lesson);
-    state.student.currentLessonNumber = selectedLesson.lessonNumber;
+  document.getElementById('viewProgressMap').onclick = () => { screen = 'progressMap'; render(); };
+  document.getElementById('levelSelect').onchange = (event) => {
+    const nextLevel = levels.find(level => level.id === event.target.value);
+    if (!nextLevel || nextLevel.status !== 'available') return;
+    state.student.currentLevel = nextLevel.id;
     saveState(state);
     renderStudentHome();
-  });
+  };
 }
 
 function startSession() {
@@ -359,6 +360,100 @@ function renderEndChoice() {
   };
 }
 
+
+function lessonStatus(lesson) {
+  if (state.mastered.includes(lesson.displayId)) return 'mastered';
+  if (lesson.lessonNumber === state.student.currentLessonNumber) return 'current';
+  if (lesson.lessonNumber < state.student.currentLessonNumber) return 'review';
+  return 'locked';
+}
+
+function renderProgressMap() {
+  const counts = level6ALessons.reduce((acc, lesson) => {
+    const status = lessonStatus(lesson);
+    acc[status] = (acc[status] || 0) + 1;
+    return acc;
+  }, {});
+  shell(`
+    <section class="card">
+      <button class="ghost" id="backStudent">← Back to Student Home</button>
+      <h1>Level 6A Progress Map</h1>
+      <p class="muted">Green = mastered. Amber = review. Purple = current. Gray = locked.</p>
+      <div class="legend">
+        <span><b class="dot masteredDot"></b> Mastered</span>
+        <span><b class="dot reviewDot"></b> Review</span>
+        <span><b class="dot currentDot"></b> Current</span>
+        <span><b class="dot lockedDot"></b> Locked</span>
+      </div>
+    </section>
+    <section class="grid four">
+      <div class="card"><p class="muted">Mastered</p><p class="metric">${counts.mastered || 0}</p></div>
+      <div class="card"><p class="muted">Review</p><p class="metric">${counts.review || 0}</p></div>
+      <div class="card"><p class="muted">Current</p><p class="metric small">${selectedLesson.displayId}</p></div>
+      <div class="card"><p class="muted">Locked</p><p class="metric">${counts.locked || 0}</p></div>
+    </section>
+    <section class="card">
+      <div class="progressMapHeader">
+        <div>
+          <h2>Unit 1: Counting up to 5</h2>
+          <p class="muted">Lessons 6A-1 to 6A-40 shown in this preview.</p>
+        </div>
+        <button class="primary" id="startCurrentFromMap">Start ${selectedLesson.displayId}</button>
+      </div>
+      <div class="lessonMap progressOnly">
+        ${level6ALessons.slice(0, 40).map(lesson => {
+          const status = lessonStatus(lesson);
+          const isCurrent = status === 'current';
+          const label = status === 'locked' ? '🔒' : lesson.displayId;
+          return `<button class="lessonTile ${status}" data-lesson="${lesson.lessonNumber}" ${isCurrent ? '' : 'disabled'} title="${lesson.displayId} — ${lesson.title}">${label}</button>`;
+        }).join('')}
+      </div>
+      <p class="muted">Only the current lesson can be started from this map. Future lessons stay locked.</p>
+    </section>
+  `);
+  document.getElementById('backStudent').onclick = () => { screen = 'student'; render(); };
+  document.getElementById('startCurrentFromMap').onclick = startSession;
+  document.querySelectorAll('.lessonTile.current').forEach(btn => btn.onclick = () => {
+    selectedLesson = lessonByNumber(btn.dataset.lesson);
+    state.student.currentLessonNumber = selectedLesson.lessonNumber;
+    saveState(state);
+    startSession();
+  });
+}
+
+function renderParentGate() {
+  shell(`
+    <section class="card center parentGate">
+      <h1>Parent Code</h1>
+      <p class="muted">Enter the parent code to open Parent View.</p>
+      <input id="parentCode" class="codeInput" type="password" inputmode="numeric" placeholder="Enter code" autocomplete="off">
+      <div id="codeError" class="feedback hidden">Incorrect code. Try again.</div>
+      <div class="actions">
+        <button class="secondary" id="backToStudent">Back to Student View</button>
+        <button class="primary" id="unlockParent">Unlock Parent View</button>
+      </div>
+      <p class="muted smallText">Demo parent code: 1234</p>
+    </section>
+  `);
+  const input = document.getElementById('parentCode');
+  const error = document.getElementById('codeError');
+  const unlock = () => {
+    if (input.value === '1234') {
+      parentUnlocked = true;
+      screen = 'parent';
+      render();
+    } else {
+      error.classList.remove('hidden');
+      input.focus();
+    }
+  };
+  document.getElementById('backToStudent').onclick = () => { parentUnlocked = false; screen = 'student'; render(); };
+  document.getElementById('unlockParent').onclick = unlock;
+  input.onkeydown = (event) => { if (event.key === 'Enter') unlock(); };
+  input.oninput = () => error.classList.add('hidden');
+  input.focus();
+}
+
 function renderParent() {
   const warmup = activeWarmup();
   shell(`
@@ -392,7 +487,8 @@ function renderParent() {
     if (confirm('Are you sure you want to reset all student progress on this device?')) {
       state = resetStudentProgress();
       selectedLesson = lessonByNumber(state.student.currentLessonNumber);
-      screen = 'parent';
+      parentUnlocked = false;
+      screen = 'student';
       render();
     }
   };
