@@ -1,0 +1,9 @@
+{
+  "name": "math-mastery-phase1-rules",
+  "version": "1.0.0",
+  "description": "Phase 1 rules and curriculum logic for the mastery-based math app.",
+  "scripts": {
+    "audit": "node src/utils/ruleValidator.js"
+  },
+  "private": true
+}
