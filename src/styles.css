@@ -127,3 +127,6 @@ th { color: #64748b; background: #f8fafc; font-size: 13px; }
 .questionDisplay.objectDisplay { letter-spacing: 0.2rem; line-height: 1.5; }
 .questionDisplay.dotDisplay { letter-spacing: 0.28rem; line-height: 1.6; }
 .questionDisplay.numberDisplay { font-size: clamp(5rem, 18vw, 9rem); font-weight: 900; color: #4338ca; }
+.typedAnswer { display: flex; gap: 12px; align-items: center; justify-content: center; flex-wrap: wrap; }
+.typedAnswer input { max-width: 220px; font-size: 28px; text-align: center; min-height: 64px; }
+.setupCard { max-width: 980px; margin-left: auto; margin-right: auto; }

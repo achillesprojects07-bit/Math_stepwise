@@ -1,33 +1,31 @@
-# Math Stepwise — Phase 3 Level 6A Audited Build
+# Math Stepwise — Phase 4 Early Levels Expansion
 
-This upload-ready build includes the completed Level 6A curriculum structure and keeps the Phase 2 UX workflow fixes.
+This upload-ready build expands the app from Level 6A into the early math ladder:
 
-## Upload these items to GitHub
+**6A → 5A → 4A → 3A → 2A**
 
-- `audit/`
-- `docs/`
-- `src/`
-- `index.html`
-- `package.json`
-- `README.md`
+## What changed
 
-## Included
+- Added Level 5A, 4A, 3A, and 2A as available built levels.
+- Starting point can now be chosen from all built levels.
+- Starting lesson updates according to the selected starting level.
+- Current level and lesson remain app-controlled by mastery progress.
+- Reset returns to the chosen starting point, not always 6A-1.
+- Parent Quick Warm-Up can be assigned from the current level or lower/completed levels.
+- Future/unbuilt levels remain locked.
+- Added typed-answer mode for number writing, sequences, and addition.
+- Daily record filters and line graphs remain included.
+- Practice Again continues until all practice items are correct.
 
-- Full Level 6A digital lesson structure: `6A-1` to `6A-200`
-- 20 Level 6A curriculum blocks
-- Counting up to 5 / 10, number reading, and dot recognition modes
-- Separate Progress Map with all Level 6A lesson blocks
-- Practice Again until all practice items are correct
-- Varied encouragement line only; no secondary “look again / ready” prompt
-- Parent code gate and compact Parent Settings
-- Editable Student Information with current level/lesson app-controlled
-- Daily Work Record with filters and line graphs
+## Upload structure
 
-## Audit
+Upload these six items to GitHub:
 
-See `audit/PHASE3_AUDIT.md`.
-
-
-## Starting Point Update
-
-This audited build adds first-time setup so the student does not automatically default to 6A-1. In Phase 3, Level 6A is the fully built curriculum, so the parent can choose the starting lesson from 6A-1 to 6A-200. Higher levels are prepared for future phases and remain locked until built. Reset now returns to the chosen starting point.
+```txt
+audit
+docs
+src
+index.html
+package.json
+README.md
+```
