@@ -11,7 +11,7 @@ Checks completed:
 - Parent Settings remains compact/secondary.
 - Parent reset/passcode controls remain inside Parent Settings.
 - Practice Again stays visual and does not show attempt-count panic wording.
-- Removed the extra child-facing line “Look again when you are ready.”
+- Removed the extra child-facing “look again / when you are ready” prompt entirely.
 - Wrong-answer feedback now uses only varied encouragement text plus visual answer response.
 - Daily Work Record filters and line graphs remain included.
 

@@ -107,7 +107,7 @@ const encouragementLines = {
     'Take your time. Find the matching number.',
     'You are learning it. Try once more.',
     'Check the number carefully.',
-    'No rush. Choose again when you are ready.'
+    'No rush. Take your time.'
   ],
   dot_recognition_1_10: [
     'Almost! Look at the dots in small groups.',

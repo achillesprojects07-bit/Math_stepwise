@@ -38,4 +38,4 @@ Default parent code: `1234`
 
 
 ## Latest update
-Removed the extra ‘Look again when you are ready’ line so wrong-answer feedback relies only on the varied encouragement message.
+Removed all “look again / when you are ready” wording so wrong-answer feedback relies only on the varied encouragement message.
