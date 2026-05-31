@@ -1,4 +1,4 @@
-const KEY = 'math_stepwise_progress_v2_latest_corrected';
+export const KEY = 'math_stepwise_progress_v2_reset_fixed';
 
 export const defaultState = {
   student: {
@@ -21,9 +21,9 @@ export const defaultState = {
 export function loadState() {
   try {
     const saved = JSON.parse(localStorage.getItem(KEY));
-    return saved ? { ...defaultState, ...saved, student: { ...defaultState.student, ...saved.student } } : structuredClone(defaultState);
+    return saved ? { ...cloneDefaultState(), ...saved, student: { ...defaultState.student, ...saved.student } } : cloneDefaultState();
   } catch {
-    return structuredClone(defaultState);
+    return cloneDefaultState();
   }
 }
 
@@ -31,9 +31,23 @@ export function saveState(state) {
   localStorage.setItem(KEY, JSON.stringify(state));
 }
 
+function cloneDefaultState() {
+  return JSON.parse(JSON.stringify(defaultState));
+}
+
 export function resetStudentProgress() {
+  const freshState = cloneDefaultState();
+
+  // Remove every previous Math Stepwise progress key, including older Phase 2 builds.
   Object.keys(localStorage)
     .filter((key) => key.startsWith('math_stepwise_progress'))
     .forEach((key) => localStorage.removeItem(key));
-  return structuredClone(defaultState);
+
+  Object.keys(sessionStorage || {})
+    .filter((key) => key.startsWith('math_stepwise_progress'))
+    .forEach((key) => sessionStorage.removeItem(key));
+
+  // Save the default state immediately so the UI cannot rehydrate an old current lesson.
+  localStorage.setItem(KEY, JSON.stringify(freshState));
+  return freshState;
 }

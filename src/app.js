@@ -527,15 +527,18 @@ function renderParent() {
   setButton('studentInfo', () => { screen = 'studentInfo'; render(); });
   setButton('dailyRecord', () => { screen = 'dailyRecord'; render(); });
   setButton('assignPractice', () => { screen = 'assignPractice'; render(); });
-  document.getElementById('resetProgress').onclick = () => {
+  setButton('resetProgress', () => {
     if (confirm('Are you sure you want to reset all student progress on this device?')) {
       state = resetStudentProgress();
-      selectedLesson = lessonByNumber(state.student.currentLessonNumber);
+      selectedLesson = lessonByNumber(1);
+      session = null;
       parentUnlocked = false;
+      recordFilters = { from: '', to: '', level: 'all' };
+      assignForm = { level: state.student.currentLevel, from: 1, to: 1 };
       screen = 'student';
       render();
     }
-  };
+  });
 }
 
 function renderStudentInfo() {

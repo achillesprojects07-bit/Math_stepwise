@@ -39,3 +39,8 @@ Demo parent code: `1234`
 ## Latest fix
 
 This version fixes the freeze caused by edge-case multiple-choice generation when the child makes several mistakes or enters Practice Again. The audit includes a 4+ mistake stress check.
+
+
+## Reset fix
+
+This build fixes the parent reset behavior so resetting returns the app to **6A-1** and clears all old Math Stepwise progress keys from previous builds.

@@ -1,7 +1,7 @@
 {
   "name": "math-stepwise-phase2-final-workflow",
-  "version": "2.4.0",
-  "description": "Phase 2 final workflow build with parent code gate, clean student home, progress map, strict retention, parent reset, records, filters, graphs, and audited upload structure.",
+  "version": "2.4.1",
+  "description": "Phase 2 reset-fixed workflow build with strict retention, parent code gate, progress map, parent reset, records, filters, graphs, and audited upload structure.",
   "type": "module",
   "scripts": {
     "audit": "node audit/audit.js",

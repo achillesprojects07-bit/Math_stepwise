@@ -1,30 +1,26 @@
-# Phase 2 No-Freeze Workflow Audit
+# Phase 2 Audit Report — Reset Fixed Build
 
-Audit result: PASSED
+Audit result: PASSED.
 
-## Critical bug fixed
+## Checks performed
 
-The freeze was traced to the multiple-choice generator. For edge answers such as 5 in a 1–5 range, the old distractor logic could fail to produce four unique choices and loop indefinitely. This could look like the app freezing after several mistakes or during Practice Again.
-
-## Fix verified
-
-- Multiple-choice generation now builds choices from the full available range, so it cannot infinite-loop on edge answers.
-- Stress audit simulates 5 weak/wrong-first-try items and confirms Practice Again generates a bounded queue.
-- Wrong Practice Again answers do not advance the practice index.
-- Practice Again queue does not expand dynamically during wrong answers, preventing endless queue growth.
-- Practice Again ends only after all items are answered correctly.
-- Student Home shows today's date.
-- Student Home has Start Today's Work and View Progress Map only; lesson tiles stay in the Progress Map.
-- Progress Map prevents jumping ahead to future lessons.
+- Required upload structure exists: audit, docs, src, index.html, package.json, README.md.
+- Student Home shows today’s date.
+- Lesson labels use clean format such as 6A-1 and 6A-13.
+- Lesson tiles are kept off the Student Home and moved to Progress Map.
+- Progress Map has mastered, review, current, and locked states.
 - Parent View is protected by parent code.
-- Parent reset remains parent-only and clears Math Stepwise local progress keys.
-- Daily Work Record filters, graphs, and recommendations remain included.
-- Buttons use safe binding and explicit type="button" for mobile reliability.
+- Parent reset is only inside Parent Settings.
+- Reset clears old Math Stepwise storage keys from previous builds.
+- Reset immediately saves fresh default state.
+- Reset returns the app to 6A-1, not the previously saved current lesson.
+- Practice Again continues until all items are correct.
+- Wrong Practice Again answers do not clear the item.
+- 4+ mistake stress test passed.
+- End Today’s Session and Continue to Next Lesson buttons are safely bound.
+- Daily Work Record filters and graphs are present.
+- Future levels are locked for parent assignment while current/lower levels remain available.
 
-## Command run
+## Validator
 
-```bash
-npm run audit
-```
-
-Result: `AUDIT PASSED`
+`npm run audit` passed.
