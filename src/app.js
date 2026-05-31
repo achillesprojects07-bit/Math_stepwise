@@ -1,4 +1,4 @@
-const STORAGE_KEY = 'math_stepwise_progress_v6_encouragement_linegraphs';
+const STORAGE_KEY = 'math_stepwise_progress_v7_phase3_starting_point';
 const OLD_KEY_PREFIX = 'math_stepwise_progress';
 const DEFAULT_PARENT_CODE = '1234';
 const app = document.getElementById('app');
@@ -44,8 +44,10 @@ const defaultState = () => ({
     name: 'Mia Santos',
     enrollmentDate: todayIso(),
     startingLevel: '6A',
+    startingLessonNumber: 1,
     currentLevel: '6A',
     currentLessonNumber: 1,
+    setupComplete: false,
     parentName: 'Aileen Rosario',
     notes: 'Prefers visual counting.'
   },
@@ -88,13 +90,22 @@ function loadState() {
 }
 function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
 function clearAllProgress() {
+  const existingStudent = { ...defaultState().student, ...(state.student || {}) };
+  const parentCode = state.parentCode || DEFAULT_PARENT_CODE;
   Object.keys(localStorage).filter(k => k.startsWith(OLD_KEY_PREFIX)).forEach(k => localStorage.removeItem(k));
   Object.keys(sessionStorage).filter(k => k.startsWith(OLD_KEY_PREFIX)).forEach(k => sessionStorage.removeItem(k));
   state = defaultState();
+  state.student = {
+    ...existingStudent,
+    currentLevel: existingStudent.startingLevel || '6A',
+    currentLessonNumber: Number(existingStudent.startingLessonNumber || 1),
+    setupComplete: true
+  };
+  state.parentCode = parentCode;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   session = null;
   recordFilters = { from: '', to: '', level: 'all' };
-  assignForm = { level: '6A', from: 1, to: 1 };
+  assignForm = { level: state.student.currentLevel, from: state.student.currentLessonNumber, to: state.student.currentLessonNumber };
   parentUnlocked = false;
   screen = 'student';
   render();
@@ -234,6 +245,7 @@ function shell(content) {
   app.innerHTML = `<header class="topbar"><div><div class="brand">Math Stepwise</div><div class="subtle">Small steps. Clear mastery.</div></div><nav><button type="button" class="ghost" data-action="student">Student View</button><button type="button" class="ghost" data-action="parent">Parent View</button></nav></header><main>${content}</main>`;
 }
 function render() {
+  if (!state.student.setupComplete && screen !== 'parentGate' && screen !== 'parent') return renderSetup();
   if (screen === 'student') return renderStudent();
   if (screen === 'lesson') return renderLesson();
   if (screen === 'warmup') return renderWarmup();
@@ -248,6 +260,11 @@ function render() {
   if (screen === 'dailyRecord') return renderDailyRecord();
   if (screen === 'assign') return renderAssign();
 }
+
+function renderSetup() {
+  shell(`<section class="card center setupCard"><p class="eyebrow">First-Time Setup</p><h1>Choose the starting point</h1><p class="muted">Set where this student should begin. The app will control Current Level and Current Lesson after setup.</p><div class="formGrid studentForm"><label>Student Name <input id="setupStudentName" type="text" value="${escapeAttr(state.student.name)}" autocomplete="off"></label><label>Date of Enrollment <input id="setupEnrollmentDate" type="date" value="${state.student.enrollmentDate || todayIso()}"></label><label>Starting Level <select id="setupStartingLevel">${levels.map(l=>`<option value="${l.id}" ${state.student.startingLevel===l.id?'selected':''} ${l.id !== '6A'?'disabled':''}>${l.id}${l.id !== '6A'?' (Available in a later phase)':''}</option>`).join('')}</select></label><label>Starting Lesson <select id="setupStartingLesson">${Array.from({length:200},(_,i)=>`<option value="${i+1}" ${Number(state.student.startingLessonNumber||1)===i+1?'selected':''}>6A-${i+1}</option>`).join('')}</select></label><label>Parent / Guardian <input id="setupParentName" type="text" value="${escapeAttr(state.student.parentName)}" autocomplete="off"></label><label class="full">Notes <textarea id="setupNotes" rows="3">${escapeHtml(state.student.notes)}</textarea></label></div><div class="actions"><button type="button" class="primary" data-action="saveSetup">Save & Start</button></div><p class="muted smallText">Phase 3 fully supports Level 6A. Higher levels will unlock as they are built.</p></section>`);
+}
+
 function renderStudent() {
   const lesson = currentLesson();
   const warmup = activeWarmup();
@@ -375,11 +392,11 @@ function renderParent() {
 }
 
 function renderParentSettings() {
-  shell(`<section class="card"><button type="button" class="ghost" data-action="parentHome">← Back</button><h1>Parent Settings</h1><p class="muted">Rarely used parent-only controls are kept here.</p><div class="settingsGrid"><div class="settingsBox"><h3>Change Parent Passcode</h3><p class="muted">Use a simple code that the child will not know.</p><label>Current Code <input id="currentParentCode" class="codeInput smallInput" type="password" inputmode="numeric" autocomplete="off"></label><label>New Code <input id="newParentCode" class="codeInput smallInput" type="password" inputmode="numeric" autocomplete="off"></label><label>Confirm New Code <input id="confirmParentCode" class="codeInput smallInput" type="password" inputmode="numeric" autocomplete="off"></label><div id="passcodeMessage" class="muted"></div><div class="actions left"><button type="button" class="primary" data-action="saveParentCode">Save New Code</button><button type="button" class="secondary" data-action="resetParentCodeDefault">Reset Code to 1234</button></div></div><div class="settingsBox dangerZone"><h3>Reset Student Progress</h3><p class="muted">This clears progress saved on this device and returns the student to 6A-1.</p><button type="button" class="danger" data-action="resetConfirm">Reset Student Progress</button></div></div></section>`);
+  shell(`<section class="card"><button type="button" class="ghost" data-action="parentHome">← Back</button><h1>Parent Settings</h1><p class="muted">Rarely used parent-only controls are kept here.</p><div class="settingsGrid"><div class="settingsBox"><h3>Change Parent Passcode</h3><p class="muted">Use a simple code that the child will not know.</p><label>Current Code <input id="currentParentCode" class="codeInput smallInput" type="password" inputmode="numeric" autocomplete="off"></label><label>New Code <input id="newParentCode" class="codeInput smallInput" type="password" inputmode="numeric" autocomplete="off"></label><label>Confirm New Code <input id="confirmParentCode" class="codeInput smallInput" type="password" inputmode="numeric" autocomplete="off"></label><div id="passcodeMessage" class="muted"></div><div class="actions left"><button type="button" class="primary" data-action="saveParentCode">Save New Code</button><button type="button" class="secondary" data-action="resetParentCodeDefault">Reset Code to 1234</button></div></div><div class="settingsBox dangerZone"><h3>Reset Student Progress</h3><p class="muted">This clears progress saved on this device and returns the student to the chosen starting point.</p><button type="button" class="danger" data-action="resetConfirm">Reset Student Progress</button></div></div></section>`);
 }
 
 function renderResetConfirm() {
-  shell(`<section class="card center"><div class="warningIcon">⚠️</div><h1>Reset student progress?</h1><p class="muted">This will erase lesson progress, Daily Work Records, Quick Warm-Up assignments, and recommendations saved on this device.</p><div class="actions"><button type="button" class="secondary" data-action="parentSettings">Cancel</button><button type="button" class="danger" data-action="resetNow">Yes, Reset Progress</button></div></section>`);
+  shell(`<section class="card center"><div class="warningIcon">⚠️</div><h1>Reset student progress?</h1><p class="muted">This will erase lesson progress, Daily Work Records, Quick Warm-Up assignments, and recommendations saved on this device. The student will return to the chosen starting point.</p><div class="actions"><button type="button" class="secondary" data-action="parentSettings">Cancel</button><button type="button" class="danger" data-action="resetNow">Yes, Reset Progress</button></div></section>`);
 }
 
 function renderStudentInfo() {
@@ -387,7 +404,8 @@ function renderStudentInfo() {
     <div class="formGrid studentForm">
       <label>Student Name <input id="studentName" type="text" value="${escapeAttr(state.student.name)}" autocomplete="off"></label>
       <label>Date of Enrollment <input id="enrollmentDate" type="date" value="${state.student.enrollmentDate || todayIso()}"></label>
-      <label>Starting Level <select id="startingLevel">${levels.map(l=>`<option value="${l.id}" ${state.student.startingLevel===l.id?'selected':''} ${!isAssignable(l.id)?'disabled':''}>${l.id}${isAssignable(l.id)?'':' (Locked)'}</option>`).join('')}</select></label>
+      <label>Starting Level <select id="startingLevel">${levels.map(l=>`<option value="${l.id}" ${state.student.startingLevel===l.id?'selected':''} ${l.id !== '6A'?'disabled':''}>${l.id}${l.id !== '6A'?' (Available in later phase)':''}</option>`).join('')}</select></label>
+      <label>Starting Lesson <select id="startingLessonNumber">${Array.from({length:200},(_,i)=>`<option value="${i+1}" ${Number(state.student.startingLessonNumber||1)===i+1?'selected':''}>6A-${i+1}</option>`).join('')}</select></label>
       <label>Parent / Guardian <input id="parentName" type="text" value="${escapeAttr(state.student.parentName)}" autocomplete="off"></label>
       <label class="full">Notes <textarea id="studentNotes" rows="3">${escapeHtml(state.student.notes)}</textarea></label>
     </div>
@@ -396,7 +414,7 @@ function renderStudentInfo() {
     <div class="profileGrid">
       <div class="readOnlyField"><span>Student Name</span><strong>${escapeHtml(state.student.name)}</strong></div>
       <div class="readOnlyField"><span>Date of Enrollment</span><strong>${state.student.enrollmentDate || todayIso()}</strong></div>
-      <div class="readOnlyField"><span>Starting Level</span><strong>${state.student.startingLevel}</strong></div>
+      <div class="readOnlyField"><span>Starting Level</span><strong>${state.student.startingLevel}</strong></div><div class="readOnlyField"><span>Starting Lesson</span><strong>${state.student.startingLevel}-${Number(state.student.startingLessonNumber || 1)}</strong></div>
       <div class="readOnlyField"><span>Parent / Guardian</span><strong>${escapeHtml(state.student.parentName)}</strong></div>
       <div class="readOnlyField full"><span>Notes</span><strong>${escapeHtml(state.student.notes || 'No notes yet')}</strong></div>
     </div>
@@ -454,14 +472,27 @@ document.addEventListener('click', (e) => {
   if (action === 'studentInfo') { studentInfoEditMode = false; screen = 'studentInfo'; return render(); }
   if (action === 'editStudentInfo') { studentInfoEditMode = true; return renderStudentInfo(); }
   if (action === 'cancelStudentInfoEdit') { studentInfoEditMode = false; return renderStudentInfo(); }
+  if (action === 'saveSetup') {
+    const name = document.getElementById('setupStudentName')?.value.trim() || 'Student';
+    const enrollmentDate = document.getElementById('setupEnrollmentDate')?.value || todayIso();
+    const startingLevel = document.getElementById('setupStartingLevel')?.value || '6A';
+    const startingLessonNumber = Number(document.getElementById('setupStartingLesson')?.value || 1);
+    const parentName = document.getElementById('setupParentName')?.value.trim() || 'Parent / Guardian';
+    const notes = document.getElementById('setupNotes')?.value.trim() || '';
+    state.student = { ...state.student, name, enrollmentDate, startingLevel, startingLessonNumber, currentLevel: startingLevel, currentLessonNumber: startingLessonNumber, parentName, notes, setupComplete: true };
+    assignForm = { level: startingLevel, from: startingLessonNumber, to: startingLessonNumber };
+    saveState();
+    screen = 'student';
+    return render();
+  }
   if (action === 'saveStudentInfo') {
     const name = document.getElementById('studentName')?.value.trim() || 'Student';
     const enrollmentDate = document.getElementById('enrollmentDate')?.value || todayIso();
     const startingLevel = document.getElementById('startingLevel')?.value || '6A';
+    const startingLessonNumber = Number(document.getElementById('startingLessonNumber')?.value || state.student.startingLessonNumber || 1);
     const parentName = document.getElementById('parentName')?.value.trim() || 'Parent / Guardian';
     const notes = document.getElementById('studentNotes')?.value.trim() || '';
-    if (!isAssignable(startingLevel)) return;
-    state.student = { ...state.student, name, enrollmentDate, startingLevel, parentName, notes };
+    state.student = { ...state.student, name, enrollmentDate, startingLevel, startingLessonNumber, parentName, notes };
     assignForm.level = state.student.currentLevel;
     saveState();
     studentInfoEditMode = false;
@@ -504,7 +535,6 @@ document.addEventListener('click', (e) => {
 });
 
 document.addEventListener('change', (e) => {
-  if (e.target.matches('[data-change="level"]')) { state.student.currentLevel = e.target.value; saveState(); render(); }
   if (e.target.matches('[data-filter]')) { recordFilters[e.target.dataset.filter] = e.target.value; renderDailyRecord(); }
   if (e.target.matches('[data-assign]')) { const key = e.target.dataset.assign; assignForm[key] = key === 'level' ? e.target.value : Number(e.target.value); if (assignForm.to < assignForm.from) assignForm.to = assignForm.from; renderAssign(); }
 });

@@ -1,6 +1,6 @@
 {
-  "name": "math-stepwise-phase3-level-6a",
-  "version": "3.0.0",
+  "name": "math-stepwise-phase3-starting-point",
+  "version": "3.1.0",
   "description": "Phase 3 Level 6A full curriculum build with audited workflow, practice, parent records, and UX clarity.",
   "type": "module",
   "scripts": {

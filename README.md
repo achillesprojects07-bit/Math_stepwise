@@ -26,3 +26,8 @@ This upload-ready build includes the completed Level 6A curriculum structure and
 ## Audit
 
 See `audit/PHASE3_AUDIT.md`.
+
+
+## Starting Point Update
+
+This audited build adds first-time setup so the student does not automatically default to 6A-1. In Phase 3, Level 6A is the fully built curriculum, so the parent can choose the starting lesson from 6A-1 to 6A-200. Higher levels are prepared for future phases and remain locked until built. Reset now returns to the chosen starting point.

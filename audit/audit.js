@@ -11,6 +11,14 @@ const curriculum = read('src/curriculum/level6A.js');
 const checks = [];
 function check(name, pass) { checks.push({ name, pass: Boolean(pass) }); }
 ['index.html','README.md','package.json','src/app.js','src/styles.css','src/curriculum/level6A.js','docs/PHASE3_LEVEL_6A.md'].forEach(f => check(`Required file: ${f}`, exists(f)));
+
+check('First-time starting point setup exists', /First-Time Setup/.test(app) && /Choose the starting point/.test(app) && /data-action="saveSetup"/.test(app));
+check('Starting lesson selector exists', /setupStartingLesson/.test(app) && /startingLessonNumber/.test(app));
+check('Setup saves current placement to chosen starting point', /currentLevel: startingLevel/.test(app) && /currentLessonNumber: startingLessonNumber/.test(app));
+check('Reset returns to chosen starting point', /currentLevel: existingStudent\.startingLevel/.test(app) && /currentLessonNumber: Number\(existingStudent\.startingLessonNumber/.test(app));
+check('Reset wording uses chosen starting point', /returns the student to the chosen starting point/.test(app) && !/returns the student to 6A-1/.test(app));
+check('Current level is not directly changed by dropdown listener', !/state\.student\.currentLevel = e\.target\.value/.test(app));
+
 check('Full 6A lesson array length 200 is defined', /Array\.from\(\{ length: 200 \}/.test(app) && /Array\.from\(\{ length: 200 \}/.test(curriculum));
 check('20 Level 6A blocks are defined', (curriculum.match(/from:/g)||[]).length === 20);
 check('Visible labels use 6A- format', /displayId: `6A-\$\{/.test(app));
