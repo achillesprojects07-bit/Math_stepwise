@@ -6,11 +6,11 @@ export const defaultState = {
     enrollmentDate: '2026-05-31',
     startingLevel: '6A',
     currentLevel: '6A',
-    currentLessonNumber: 13,
+    currentLessonNumber: 1,
     parentName: 'Aileen Rosario',
     notes: 'Prefers visual counting.'
   },
-  mastered: ['6A-1', '6A-2', '6A-3'],
+  mastered: [],
   reviewQueue: [],
   dailyRecords: [],
   appRecommendedWarmup: null,

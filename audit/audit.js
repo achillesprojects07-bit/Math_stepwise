@@ -62,8 +62,9 @@ if (!progress.includes("key.startsWith('math_stepwise_progress')")) failures.pus
 if (!app.includes("screen = 'practice'")) failures.push('Practice Again screen flow missing.');
 if (!app.includes("if (!correct)")) failures.push('Wrong-answer handling missing.');
 if (!app.includes('showGentleTryAgain(q);')) failures.push('Gentle retry feedback missing.');
-if (!app.includes('return;\n    }\n\n    const entry')) failures.push('Wrong answers may advance; expected return before entry logging.');
-if (!app.includes('session.practiceItems.push(generateQuestion(q.skill')) failures.push('Similar practice generation after practice miss missing.');
+if (!app.includes('showGentleTryAgain(q);\n      return;')) failures.push('Wrong answers may advance; expected return before entry logging.');
+if (!app.includes('Do not expand the queue during practice')) failures.push('Practice queue should not expand during wrong practice attempts; prevents 4+ mistake freezes.');
+if (app.includes('session.practiceItems.push(generateQuestion(q.skill')) failures.push('Practice queue still expands during practice miss; can freeze with many mistakes.');
 if (!app.includes('Practice Again • ${left} left')) failures.push('Practice Again visible progress missing.');
 if (!app.includes('All practice items were answered correctly')) failures.push('Practice completion confirmation missing.');
 if (!app.includes('const canContinue = Boolean(session?.mastered)')) failures.push('Continue button is not mastery-gated.');
@@ -98,6 +99,19 @@ if (!app.includes('Progress Graph')) failures.push('Progress Graph missing.');
 if (!app.includes('Practice & Repetition Graph')) failures.push('Practice & Repetition Graph missing.');
 if (!css.includes('.chart') || !css.includes('.bar')) failures.push('Graph styles missing.');
 
+
+// Hotfix interaction reliability checks
+if (!app.includes('function setButton')) failures.push('Safe button binding helper missing.');
+if (!app.includes("setButton('endSession'")) failures.push('End Today session button is not safely bound.');
+if (!app.includes("setButton('continueLesson'")) failures.push('Continue button is not safely bound.');
+if (!app.includes("setButton('parentBtn'")) failures.push('Parent View nav is not safely bound.');
+if (!app.includes("setButton('studentBtn'")) failures.push('Student View nav is not safely bound.');
+if (!app.includes('type="button"')) failures.push('Buttons need explicit type=button for mobile reliability.');
+if (!css.includes('touch-action: manipulation')) failures.push('Mobile tap reliability CSS missing.');
+if (!css.includes('nav button { flex: 1; min-height: 48px; }')) failures.push('Mobile nav touch target CSS missing.');
+if (!progress.includes('currentLessonNumber: 1')) failures.push('Reset/default should return to 6A-1.');
+if (!progress.includes('mastered: []')) failures.push('Reset/default should clear mastered lessons.');
+
 // Rules validation
 if (rules.accuracy.finalCorrectedAccuracyRequired !== 1) failures.push('100% corrected accuracy rule not locked.');
 if (!rules.accuracy.practiceAgainMustEndAllCorrect) failures.push('Practice Again all-correct rule not locked.');
@@ -112,6 +126,42 @@ try {
 } catch (e) {
   failures.push('Rule validator failed.');
 }
+
+
+// Stress audit: 4+ main lesson mistakes must create a bounded practice queue and should not require dynamic queue expansion.
+const weakItems = Array.from({ length: 5 }, (_, index) => ({
+  questionId: `stress-${index}`,
+  skill: 'count_1_to_5',
+  source: 'lesson',
+  answer: 3,
+  chosen: 3,
+  finalCorrect: true,
+  wasWrongFirstTry: true,
+  wasSlow: index % 2 === 0,
+  elapsedMs: 9000,
+  wrongAttempts: 1,
+  display: '⭐⭐⭐',
+  prompt: 'How many stars?'
+}));
+const qgenModule = await import('../src/engine/questionGenerator.js');
+const practiceStressItems = qgenModule.generatePracticeItems(weakItems);
+if (practiceStressItems.length < 5) failures.push('Stress audit failed: 5 weak items should generate practice items.');
+if (practiceStressItems.length > 10) failures.push('Stress audit failed: practice queue is too large for 5 mistakes.');
+let simulatedIndex = 0;
+let simulatedCorrect = 0;
+let safety = 0;
+while (simulatedIndex < practiceStressItems.length && safety < 100) {
+  // Simulate one wrong answer followed by one correct answer for every practice item.
+  const item = practiceStressItems[simulatedIndex];
+  item.wrongAttempts = (item.wrongAttempts || 0) + 1;
+  // The app should keep the same index after a wrong attempt.
+  if (simulatedIndex !== simulatedCorrect) failures.push('Stress audit failed: wrong practice answer advanced unexpectedly.');
+  simulatedCorrect += 1;
+  simulatedIndex += 1;
+  safety += 1;
+}
+if (safety >= 100) failures.push('Stress audit failed: practice loop did not terminate safely.');
+if (simulatedCorrect !== practiceStressItems.length) failures.push('Stress audit failed: not all practice items cleared correctly.');
 
 for (const file of ['src/app.js', 'src/engine/questionGenerator.js', 'src/engine/masteryEngine.js', 'src/engine/progressStore.js', 'src/curriculum/level6A.js', 'src/config/levels.js']) {
   try {

@@ -7,14 +7,11 @@ function shuffle(array) {
 }
 
 function choicesFor(answer, max = 10) {
-  const set = new Set([answer]);
-  while (set.size < 4) {
-    const offset = Math.floor(Math.random() * 5) - 2;
-    const random = Math.ceil(Math.random() * max);
-    const candidate = Math.min(max, Math.max(1, answer + offset || random));
-    set.add(candidate);
-  }
-  return shuffle([...set]);
+  // Build choices from the full available range.
+  // This avoids an infinite loop for edge answers such as 5 in a 1–5 range.
+  const pool = Array.from({ length: max }, (_, index) => index + 1).filter(value => value !== answer);
+  const distractors = shuffle(pool).slice(0, 3);
+  return shuffle([answer, ...distractors]);
 }
 
 export function getRangeForSkill(skill) {

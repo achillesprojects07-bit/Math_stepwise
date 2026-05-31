@@ -60,6 +60,36 @@ function render() {
   if (screen === 'assignPractice') renderAssignPractice();
 }
 
+function setButton(id, handler) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.onclick = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    handler(event);
+  };
+}
+
+
+function safeToStudent() {
+  session = null;
+  screen = 'student';
+  render();
+}
+
+function disableChoices() {
+  document.querySelectorAll('.choice').forEach(btn => { btn.disabled = true; btn.classList.add('disabledChoice'); });
+}
+
+function ensureSessionFor(screenName) {
+  if (!session) {
+    screen = 'student';
+    render();
+    return false;
+  }
+  return true;
+}
+
 function shell(content) {
   app.innerHTML = `
     <header class="topbar">
@@ -68,14 +98,14 @@ function shell(content) {
         <div class="subtle">Small steps. Clear mastery.</div>
       </div>
       <nav>
-        <button class="ghost" id="studentBtn">Student View</button>
-        <button class="ghost" id="parentBtn">Parent View</button>
+        <button type="button" class="ghost" id="studentBtn">Student View</button>
+        <button type="button" class="ghost" id="parentBtn">Parent View</button>
       </nav>
     </header>
     <main>${content}</main>
   `;
-  document.getElementById('studentBtn').onclick = () => { parentUnlocked = false; screen = 'student'; render(); };
-  document.getElementById('parentBtn').onclick = () => { screen = parentUnlocked ? 'parent' : 'parentGate'; render(); };
+  setButton('studentBtn', () => { parentUnlocked = false; screen = 'student'; render(); });
+  setButton('parentBtn', () => { screen = parentUnlocked ? 'parent' : 'parentGate'; render(); });
 }
 
 function renderStudentHome() {
@@ -93,8 +123,8 @@ function renderStudentHome() {
       </div>
       <div class="heroActions">
         ${warmup ? `<div class="notice smallNotice">Quick Warm-Up is ready.</div>` : ''}
-        <button class="primary" id="startLesson">Start Today’s Work</button>
-        <button class="secondary" id="viewProgressMap">View Progress Map</button>
+        <button type="button" class="primary" id="startLesson">Start Today’s Work</button>
+        <button type="button" class="secondary" id="viewProgressMap">View Progress Map</button>
       </div>
     </section>
     <section class="grid two">
@@ -111,8 +141,8 @@ function renderStudentHome() {
       </div>
     </section>
   `);
-  document.getElementById('startLesson').onclick = startSession;
-  document.getElementById('viewProgressMap').onclick = () => { screen = 'progressMap'; render(); };
+  setButton('startLesson', startSession);
+  setButton('viewProgressMap', () => { screen = 'progressMap'; render(); });
   document.getElementById('levelSelect').onchange = (event) => {
     const nextLevel = levels.find(level => level.id === event.target.value);
     if (!nextLevel || nextLevel.status !== 'available') return;
@@ -171,34 +201,45 @@ function questionHtml(q, progressText, helper = 'Take your time. Do your best.')
       <p class="eyebrow">${progressText}</p>
       <h1>${q.prompt}</h1>
       <div class="questionDisplay">${q.display}</div>
-      <div class="choices">${q.choices.map(c => `<button class="choice" data-choice="${c}">${c}</button>`).join('')}</div>
+      <div class="choices">${q.choices.map(c => `<button type="button" class="choice" data-choice="${c}">${c}</button>`).join('')}</div>
       <p class="muted">${helper}</p>
     </section>
   `;
 }
 
 function renderLesson() {
+  if (!ensureSessionFor('lesson')) return;
   const q = session.questions[session.index];
+  if (!q) { finishLessonBlock(); return; }
   shell(questionHtml(q, `${selectedLesson.displayId} • Question ${session.index + 1} of ${session.questions.length}`));
   attachChoiceHandlers(q, 'lesson');
 }
 
 function renderWarmup() {
+  if (!ensureSessionFor('warmup')) return;
   const q = session.questions[session.index];
+  if (!q) { finishWarmup(); return; }
   shell(questionHtml(q, `Quick Warm-Up • ${session.index + 1} of ${session.questions.length}`, 'Let’s practice a few before today’s lesson.'));
   attachChoiceHandlers(q, 'warmup');
 }
 
 function renderPracticeAgain() {
+  if (!ensureSessionFor('practice')) return;
+  if (!session.practiceItems || session.practiceItems.length === 0 || session.index >= session.practiceItems.length) { finishPracticeAgain(); return; }
   const q = session.practiceItems[session.index];
   const left = Math.max(1, session.practiceItems.length - session.index);
-  shell(questionHtml(q, `Practice Again • ${left} left`, 'Let’s clear each item correctly.'));
+  const helper = q.wrongAttempts >= 2 ? 'Try counting slowly one by one. You can do it.' : 'Let’s clear each item correctly.';
+  shell(questionHtml(q, `Practice Again • ${left} left`, helper));
   attachChoiceHandlers(q, 'practice');
 }
 
 function attachChoiceHandlers(q, mode) {
   const shownAt = Date.now();
-  document.querySelectorAll('.choice').forEach(btn => btn.onclick = () => {
+  let acceptedCorrect = false;
+  document.querySelectorAll('.choice').forEach(btn => btn.onclick = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (acceptedCorrect || !session) return;
     const chosen = Number(btn.dataset.choice);
     const correct = chosen === q.answer;
     const elapsed = Date.now() - shownAt;
@@ -209,14 +250,15 @@ function attachChoiceHandlers(q, mode) {
       if (mode === 'practice') {
         q.practiceMissed = true;
         q.guided = q.wrongAttempts >= 2;
-        if (!q.addedSimilarAfterPracticeMiss) {
-          session.practiceItems.push(generateQuestion(q.skill, 'practice_again_similar_retry'));
-          q.addedSimilarAfterPracticeMiss = true;
-        }
+        // Keep the same practice item active until it is answered correctly.
+        // Do not expand the queue during practice; this prevents 4+ mistakes from freezing or creating endless extra work.
       }
       showGentleTryAgain(q);
       return;
     }
+
+    acceptedCorrect = true;
+    disableChoices();
 
     const entry = {
       questionId: q.id,
@@ -274,6 +316,7 @@ function finishWarmup() {
 }
 
 function finishLessonBlock() {
+  if (!ensureSessionFor('lesson')) return;
   const elapsedMs = Date.now() - session.startTime;
   const result = evaluateLesson({ answerLog: session.answerLog, elapsedMs, lesson: selectedLesson });
   session.result = result;
@@ -289,6 +332,7 @@ function finishLessonBlock() {
 }
 
 function finishPracticeAgain() {
+  if (!ensureSessionFor('practice')) return;
   // This function is reachable only after each practice item has been answered correctly.
   const elapsedMs = Date.now() - session.startTime;
   const lessonScore = `${session.answerLog.filter(e => !e.wasWrongFirstTry).length}/${session.answerLog.length}`;
@@ -346,18 +390,18 @@ function renderEndChoice() {
       <p class="muted">Practice is complete. All practice items were answered correctly.</p>
       <p class="notice ${canContinue ? 'successNotice' : ''}">${canContinue ? 'You are ready to continue if you want more.' : 'Let’s stop here and practice again next time.'}</p>
       <div class="actions">
-        <button class="secondary" id="endSession">End Today’s Session</button>
-        <button class="primary" id="continueLesson" ${canContinue ? '' : 'disabled'}>Continue to Next Lesson</button>
+        <button type="button" class="secondary" id="endSession">End Today’s Session</button>
+        <button type="button" class="primary" id="continueLesson" ${canContinue ? '' : 'disabled'}>Continue to Next Lesson</button>
       </div>
     </section>
   `);
-  document.getElementById('endSession').onclick = () => { screen = 'student'; render(); };
-  document.getElementById('continueLesson').onclick = () => {
+  setButton('endSession', safeToStudent);
+  setButton('continueLesson', () => {
     if (!canContinue) return;
     selectedLesson = lessonByNumber(state.student.currentLessonNumber);
     startLessonOnly();
     render();
-  };
+  });
 }
 
 
@@ -376,7 +420,7 @@ function renderProgressMap() {
   }, {});
   shell(`
     <section class="card">
-      <button class="ghost" id="backStudent">← Back to Student Home</button>
+      <button type="button" class="ghost" id="backStudent">← Back to Student Home</button>
       <h1>Level 6A Progress Map</h1>
       <p class="muted">Green = mastered. Amber = review. Purple = current. Gray = locked.</p>
       <div class="legend">
@@ -398,21 +442,21 @@ function renderProgressMap() {
           <h2>Unit 1: Counting up to 5</h2>
           <p class="muted">Lessons 6A-1 to 6A-40 shown in this preview.</p>
         </div>
-        <button class="primary" id="startCurrentFromMap">Start ${selectedLesson.displayId}</button>
+        <button type="button" class="primary" id="startCurrentFromMap">Start ${selectedLesson.displayId}</button>
       </div>
       <div class="lessonMap progressOnly">
         ${level6ALessons.slice(0, 40).map(lesson => {
           const status = lessonStatus(lesson);
           const isCurrent = status === 'current';
           const label = status === 'locked' ? '🔒' : lesson.displayId;
-          return `<button class="lessonTile ${status}" data-lesson="${lesson.lessonNumber}" ${isCurrent ? '' : 'disabled'} title="${lesson.displayId} — ${lesson.title}">${label}</button>`;
+          return `<button type="button" class="lessonTile ${status}" data-lesson="${lesson.lessonNumber}" ${isCurrent ? '' : 'disabled'} title="${lesson.displayId} — ${lesson.title}">${label}</button>`;
         }).join('')}
       </div>
       <p class="muted">Only the current lesson can be started from this map. Future lessons stay locked.</p>
     </section>
   `);
-  document.getElementById('backStudent').onclick = () => { screen = 'student'; render(); };
-  document.getElementById('startCurrentFromMap').onclick = startSession;
+  setButton('backStudent', () => { screen = 'student'; render(); });
+  setButton('startCurrentFromMap', startSession);
   document.querySelectorAll('.lessonTile.current').forEach(btn => btn.onclick = () => {
     selectedLesson = lessonByNumber(btn.dataset.lesson);
     state.student.currentLessonNumber = selectedLesson.lessonNumber;
@@ -429,8 +473,8 @@ function renderParentGate() {
       <input id="parentCode" class="codeInput" type="password" inputmode="numeric" placeholder="Enter code" autocomplete="off">
       <div id="codeError" class="feedback hidden">Incorrect code. Try again.</div>
       <div class="actions">
-        <button class="secondary" id="backToStudent">Back to Student View</button>
-        <button class="primary" id="unlockParent">Unlock Parent View</button>
+        <button type="button" class="secondary" id="backToStudent">Back to Student View</button>
+        <button type="button" class="primary" id="unlockParent">Unlock Parent View</button>
       </div>
       <p class="muted smallText">Demo parent code: 1234</p>
     </section>
@@ -447,8 +491,8 @@ function renderParentGate() {
       input.focus();
     }
   };
-  document.getElementById('backToStudent').onclick = () => { parentUnlocked = false; screen = 'student'; render(); };
-  document.getElementById('unlockParent').onclick = unlock;
+  setButton('backToStudent', () => { parentUnlocked = false; screen = 'student'; render(); });
+  setButton('unlockParent', unlock);
   input.onkeydown = (event) => { if (event.key === 'Enter') unlock(); };
   input.oninput = () => error.classList.add('hidden');
   input.focus();
@@ -464,9 +508,9 @@ function renderParent() {
         <p class="muted">Review records, assign next-session Quick Warm-Up, or reset progress.</p>
       </div>
       <div class="heroActions">
-        <button class="ghost" id="studentInfo">Student Information</button>
-        <button class="ghost" id="dailyRecord">Daily Work Record</button>
-        <button class="ghost" id="assignPractice">Assign Warm-Up</button>
+        <button type="button" class="ghost" id="studentInfo">Student Information</button>
+        <button type="button" class="ghost" id="dailyRecord">Daily Work Record</button>
+        <button type="button" class="ghost" id="assignPractice">Assign Warm-Up</button>
       </div>
     </section>
     <section class="grid three">
@@ -477,12 +521,12 @@ function renderParent() {
     <section class="card">
       <h2>Parent Settings</h2>
       <p class="muted">Reset is parent-only and clears progress saved on this device.</p>
-      <button class="danger" id="resetProgress">Reset Student Progress</button>
+      <button type="button" class="danger" id="resetProgress">Reset Student Progress</button>
     </section>
   `);
-  document.getElementById('studentInfo').onclick = () => { screen = 'studentInfo'; render(); };
-  document.getElementById('dailyRecord').onclick = () => { screen = 'dailyRecord'; render(); };
-  document.getElementById('assignPractice').onclick = () => { screen = 'assignPractice'; render(); };
+  setButton('studentInfo', () => { screen = 'studentInfo'; render(); });
+  setButton('dailyRecord', () => { screen = 'dailyRecord'; render(); });
+  setButton('assignPractice', () => { screen = 'assignPractice'; render(); });
   document.getElementById('resetProgress').onclick = () => {
     if (confirm('Are you sure you want to reset all student progress on this device?')) {
       state = resetStudentProgress();
@@ -497,7 +541,7 @@ function renderParent() {
 function renderStudentInfo() {
   shell(`
     <section class="card">
-      <button class="ghost" id="back">← Back</button>
+      <button type="button" class="ghost" id="back">← Back</button>
       <h1>Student Information</h1>
       <div class="infoGrid">
         <div><span>Student Name</span><strong>${state.student.name}</strong></div>
@@ -510,7 +554,7 @@ function renderStudentInfo() {
       </div>
     </section>
   `);
-  document.getElementById('back').onclick = () => { screen = 'parent'; render(); };
+  setButton('back', () => { screen = 'parent'; render(); });
 }
 
 function filteredRecords() {
@@ -551,14 +595,14 @@ function renderDailyRecord() {
   const summary = buildRecordSummary(rows);
   shell(`
     <section class="card">
-      <button class="ghost" id="back">← Back</button>
+      <button type="button" class="ghost" id="back">← Back</button>
       <h1>Daily Work Record</h1>
       <p class="muted">Default view shows the entire recorded progress. Use filters to review a specific range.</p>
       <div class="filters">
         <label>From <input type="date" id="fromDate" value="${recordFilters.from}"></label>
         <label>To <input type="date" id="toDate" value="${recordFilters.to}"></label>
         <label>Level <select id="recordLevel"><option value="all" ${recordFilters.level === 'all' ? 'selected' : ''}>All levels</option>${levels.map(level => `<option value="${level.id}" ${recordFilters.level === level.id ? 'selected' : ''}>${level.id}</option>`).join('')}</select></label>
-        <button class="secondary" id="clearFilters">Entire Progress</button>
+        <button type="button" class="secondary" id="clearFilters">Entire Progress</button>
       </div>
     </section>
     <section class="grid two">${progressGraph}${repetitionGraph}</section>
@@ -573,11 +617,11 @@ function renderDailyRecord() {
       </tbody></table></div>
     </section>
   `);
-  document.getElementById('back').onclick = () => { screen = 'parent'; render(); };
+  setButton('back', () => { screen = 'parent'; render(); });
   document.getElementById('fromDate').onchange = (e) => { recordFilters.from = e.target.value; renderDailyRecord(); };
   document.getElementById('toDate').onchange = (e) => { recordFilters.to = e.target.value; renderDailyRecord(); };
   document.getElementById('recordLevel').onchange = (e) => { recordFilters.level = e.target.value; renderDailyRecord(); };
-  document.getElementById('clearFilters').onclick = () => { recordFilters = { from: '', to: '', level: 'all' }; renderDailyRecord(); };
+  setButton('clearFilters', () => { recordFilters = { from: '', to: '', level: 'all' }; renderDailyRecord(); });
 }
 
 function buildRecordSummary(rows) {
@@ -594,7 +638,7 @@ function renderAssignPractice() {
   const maxLesson = selectedLevel.id === '6A' ? 200 : 200;
   shell(`
     <section class="card">
-      <button class="ghost" id="back">← Back</button>
+      <button type="button" class="ghost" id="back">← Back</button>
       <h1>Assign Quick Warm-Up for Next Session</h1>
       <p class="muted">Parent assignment overrides the app recommendation. If you do nothing, the app uses its recommendation automatically.</p>
       <div class="notice">Current app recommendation: ${state.appRecommendedWarmup ? state.appRecommendedWarmup.label : 'None'}</div>
@@ -612,17 +656,17 @@ function renderAssignPractice() {
         </label>
       </div>
       <div class="actions left">
-        <button class="primary" id="assignWarmup">Assign for Next Session</button>
-        <button class="secondary" id="clearManual">Clear Parent Assignment</button>
+        <button type="button" class="primary" id="assignWarmup">Assign for Next Session</button>
+        <button type="button" class="secondary" id="clearManual">Clear Parent Assignment</button>
       </div>
       <p class="muted">Available levels: current level and lower/completed levels. Future levels are locked.</p>
     </section>
   `);
-  document.getElementById('back').onclick = () => { screen = 'parent'; render(); };
+  setButton('back', () => { screen = 'parent'; render(); });
   document.getElementById('assignLevel').onchange = (e) => { assignForm.level = e.target.value; assignForm.from = 1; assignForm.to = 1; renderAssignPractice(); };
   document.getElementById('fromLesson').onchange = (e) => { assignForm.from = Number(e.target.value); if (assignForm.to < assignForm.from) assignForm.to = assignForm.from; renderAssignPractice(); };
   document.getElementById('toLesson').onchange = (e) => { assignForm.to = Number(e.target.value); if (assignForm.to < assignForm.from) assignForm.from = assignForm.to; renderAssignPractice(); };
-  document.getElementById('assignWarmup').onclick = () => {
+  setButton('assignWarmup', () => {
     const from = Math.min(assignForm.from, assignForm.to);
     const to = Math.max(assignForm.from, assignForm.to);
     state.manualWarmup = {
@@ -636,13 +680,13 @@ function renderAssignPractice() {
     saveState(state);
     screen = 'parent';
     render();
-  };
-  document.getElementById('clearManual').onclick = () => {
+  });
+  setButton('clearManual', () => {
     state.manualWarmup = null;
     saveState(state);
     screen = 'parent';
     render();
-  };
+  });
 }
 
 render();

@@ -1,4 +1,4 @@
-# StepWise Math — Phase 2 Final Workflow Build
+# StepWise Math — Phase 2 No-Freeze Final Workflow Build
 
 This upload-ready build completes the Phase 2 app skeleton workflow fixes before Level 6A full content expansion.
 
@@ -34,3 +34,8 @@ Do not upload the outer folder.
 ## Parent code
 
 Demo parent code: `1234`
+
+
+## Latest fix
+
+This version fixes the freeze caused by edge-case multiple-choice generation when the child makes several mistakes or enters Practice Again. The audit includes a 4+ mistake stress check.
