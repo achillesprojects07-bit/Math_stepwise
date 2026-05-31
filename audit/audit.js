@@ -22,7 +22,7 @@ includes('reset clears old keys', 'Object.keys(localStorage).filter');
 includes('app recommendation details', 'Lessons:</strong>');
 includes('automatic recommendation wording', 'used automatically');
 includes('manual assignment overrides wording', 'Parent assignment overrides');
-if (/look again/i.test(app) || /when you are ready/i.test(app)) failures.push('Removed prompt still exists: look again / when you are ready.');
+if (/look/i.test(app) || /ready/i.test(app)) failures.push('Removed child prompt wording still exists.');
 includes('varied encouragement feedback', 'encouragementFor(q)');
 includes('visual progress dots', 'function progressDots');
 includes('line graphs', 'polyline');

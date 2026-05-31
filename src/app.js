@@ -92,34 +92,34 @@ const encouragementLines = {
     'Almost! Count each one slowly.',
     'Take your time. Touch each item as you count.',
     "Let’s start from one and count again.",
-    'You are close. Look one by one.',
+    'You are close. Count one by one.',
     "No rush. Let’s practice this together."
   ],
   counting_1_10: [
     'Almost! Count each one slowly.',
     'Try pointing to each dot as you count.',
     "Let’s slow down and count from one.",
-    'Look carefully. You can do this.',
+    'Take it slowly. You can do this.',
     'No rush. Count one by one.'
   ],
   number_reading_1_10: [
-    'Almost! Look at the number again.',
+    'Almost! Check the number one more time.',
     'Take your time. Find the matching number.',
     'You are learning it. Try once more.',
     'Check the number carefully.',
     'No rush. Take your time.'
   ],
   dot_recognition_1_10: [
-    'Almost! Look at the dots in small groups.',
+    'Almost! Count the dots in small groups.',
     'Try counting the dots one by one.',
     'You are close. Check the dots again.',
-    'Take your time and look carefully.',
+    'Take your time and count carefully.',
     "No rush. Let’s try this dot pattern again."
   ],
   default: [
     'Almost! Try again.',
     'Take your time. Try once more.',
-    'You are close. Look carefully.',
+    'You are close. Count carefully.',
     "No rush. Let’s try again.",
     'Keep going. You are learning.'
   ]
@@ -314,7 +314,7 @@ function finishPractice() {
   render();
 }
 function renderEnd() {
-  shell(`<section class="card center"><h1>Great work today!</h1><p class="muted">Practice is complete. All practice items were answered correctly.</p><p class="notice successNotice">You are ready to continue if you want more.</p><div class="actions"><button type="button" class="secondary" data-action="endSession">End Today’s Session</button><button type="button" class="primary" data-action="continueLesson">Continue to Next Lesson</button></div></section>`);
+  shell(`<section class="card center"><h1>Great work today!</h1><p class="muted">Practice is complete. All practice items were answered correctly.</p><p class="notice successNotice">You can continue if you want more.</p><div class="actions"><button type="button" class="secondary" data-action="endSession">End Today’s Session</button><button type="button" class="primary" data-action="continueLesson">Continue to Next Lesson</button></div></section>`);
 }
 function renderProgress() {
   const cur = currentLesson();
