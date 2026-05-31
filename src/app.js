@@ -1,695 +1,314 @@
-import { level6ALessons, level6AUnits } from './curriculum/level6A.js';
-import { generateLessonQuestions, generatePracticeItems, generateQuestion, generateQuestionsForWarmup } from './engine/questionGenerator.js';
-import { evaluateLesson, makeNextPracticeRecommendation } from './engine/masteryEngine.js';
-import { loadState, saveState, resetStudentProgress } from './engine/progressStore.js';
-import { levels, levelOrder } from './config/levels.js';
-
+const STORAGE_KEY = 'math_stepwise_progress_v5_click_reset_final';
+const OLD_KEY_PREFIX = 'math_stepwise_progress';
+const PARENT_CODE = '1234';
 const app = document.getElementById('app');
+
+const levelOrder = ['6A', '5A', '4A', '3A', '2A', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'XV', 'XM', 'XP'];
+const levels = [
+  { id: '6A', title: 'Counting & Number Recognition', status: 'available' },
+  ...levelOrder.slice(1).map(id => ({ id, title: 'Coming soon', status: 'locked' }))
+];
+const lessons = Array.from({ length: 200 }, (_, i) => {
+  const n = i + 1;
+  const title = n <= 30 ? 'Counting up to 5' : n <= 100 ? 'Counting up to 10' : n <= 150 ? 'Number Reading up to 10' : 'Dot Recognition up to 10';
+  const max = n <= 30 ? 5 : 10;
+  const skill = n <= 30 ? 'counting_1_5' : n <= 100 ? 'counting_1_10' : n <= 150 ? 'number_reading_1_10' : 'dot_recognition_1_10';
+  return { level: '6A', lessonNumber: n, displayId: `6A-${n}`, title, max, skill };
+});
+
+const defaultState = () => ({
+  student: {
+    name: 'Mia Santos',
+    enrollmentDate: todayIso(),
+    startingLevel: '6A',
+    currentLevel: '6A',
+    currentLessonNumber: 1,
+    parentName: 'Aileen Rosario',
+    notes: 'Prefers visual counting.'
+  },
+  mastered: [],
+  dailyRecords: [],
+  appRecommendedWarmup: null,
+  manualWarmup: null,
+  lastCompletedLessonNumber: null
+});
+
 let state = loadState();
 let screen = 'student';
 let parentUnlocked = false;
-let selectedLesson = lessonByNumber(state.student.currentLessonNumber);
 let session = null;
 let recordFilters = { from: '', to: '', level: 'all' };
 let assignForm = { level: state.student.currentLevel, from: 1, to: 1 };
 
-function lessonByNumber(n) {
-  return level6ALessons.find((l) => l.lessonNumber === Number(n)) || level6ALessons[0];
+function todayIso() { return new Date().toISOString().slice(0, 10); }
+function fmtDate(iso = todayIso()) {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
 }
-
-function todayIso() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function formatDisplayDate(iso = todayIso()) {
-  const [year, month, day] = iso.split('-').map(Number);
-  return new Date(year, month - 1, day).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
-}
-
 function msToText(ms) {
-  const totalSeconds = Math.max(0, Math.round(ms / 1000));
-  const m = Math.floor(totalSeconds / 60);
-  const s = String(totalSeconds % 60).padStart(2, '0');
-  return `${m}m ${s}s`;
+  const s = Math.max(0, Math.round(ms / 1000));
+  return `${Math.floor(s / 60)}m ${String(s % 60).padStart(2, '0')}s`;
 }
-
+function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
+function loadState() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (!saved) return defaultState();
+    return { ...defaultState(), ...saved, student: { ...defaultState().student, ...(saved.student || {}) } };
+  } catch { return defaultState(); }
+}
+function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+function clearAllProgress() {
+  Object.keys(localStorage).filter(k => k.startsWith(OLD_KEY_PREFIX)).forEach(k => localStorage.removeItem(k));
+  Object.keys(sessionStorage).filter(k => k.startsWith(OLD_KEY_PREFIX)).forEach(k => sessionStorage.removeItem(k));
+  state = defaultState();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  session = null;
+  recordFilters = { from: '', to: '', level: 'all' };
+  assignForm = { level: '6A', from: 1, to: 1 };
+  parentUnlocked = false;
+  screen = 'student';
+  render();
+}
+function currentLesson() { return lessons.find(l => l.lessonNumber === Number(state.student.currentLessonNumber)) || lessons[0]; }
+function lessonByNum(n) { return lessons.find(l => l.lessonNumber === Number(n)) || lessons[0]; }
 function activeWarmup() {
   if (state.manualWarmup) return { ...state.manualWarmup, source: 'Parent assigned' };
   if (state.appRecommendedWarmup) return { ...state.appRecommendedWarmup, source: 'App recommendation' };
   return null;
 }
-
-function isLevelAssignable(levelId) {
-  const currentIndex = levelOrder.indexOf(state.student.currentLevel);
-  const levelIndex = levelOrder.indexOf(levelId);
-  return levelIndex !== -1 && currentIndex !== -1 && levelIndex <= currentIndex;
-}
-
-function render() {
-  selectedLesson = lessonByNumber(state.student.currentLessonNumber);
-  if (screen === 'student') renderStudentHome();
-  if (screen === 'lesson') renderLesson();
-  if (screen === 'practice') renderPracticeAgain();
-  if (screen === 'warmup') renderWarmup();
-  if (screen === 'endChoice') renderEndChoice();
-  if (screen === 'parentGate') renderParentGate();
-  if (screen === 'parent') renderParent();
-  if (screen === 'progressMap') renderProgressMap();
-  if (screen === 'studentInfo') renderStudentInfo();
-  if (screen === 'dailyRecord') renderDailyRecord();
-  if (screen === 'assignPractice') renderAssignPractice();
-}
-
-function setButton(id, handler) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.onclick = (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    handler(event);
-  };
-}
-
-
-function safeToStudent() {
-  session = null;
-  screen = 'student';
-  render();
-}
-
-function disableChoices() {
-  document.querySelectorAll('.choice').forEach(btn => { btn.disabled = true; btn.classList.add('disabledChoice'); });
-}
-
-function ensureSessionFor(screenName) {
-  if (!session) {
-    screen = 'student';
-    render();
-    return false;
+function displayDots(n) { return Array.from({ length: n }, () => '●').join(' '); }
+function safeChoices(answer, min, max) {
+  const set = new Set([answer]);
+  let delta = 1;
+  while (set.size < Math.min(4, max - min + 1)) {
+    if (answer - delta >= min) set.add(answer - delta);
+    if (answer + delta <= max) set.add(answer + delta);
+    delta += 1;
   }
-  return true;
-}
-
-function shell(content) {
-  app.innerHTML = `
-    <header class="topbar">
-      <div>
-        <div class="brand">Math Stepwise</div>
-        <div class="subtle">Small steps. Clear mastery.</div>
-      </div>
-      <nav>
-        <button type="button" class="ghost" id="studentBtn">Student View</button>
-        <button type="button" class="ghost" id="parentBtn">Parent View</button>
-      </nav>
-    </header>
-    <main>${content}</main>
-  `;
-  setButton('studentBtn', () => { parentUnlocked = false; screen = 'student'; render(); });
-  setButton('parentBtn', () => { screen = parentUnlocked ? 'parent' : 'parentGate'; render(); });
-}
-
-function renderStudentHome() {
-  const warmup = activeWarmup();
-  shell(`
-    <section class="hero card">
-      <div>
-        <p class="eyebrow">Today: ${formatDisplayDate()}</p>
-        <h1>Hi, ${state.student.name}</h1>
-        <p class="muted">Today’s Plan</p>
-        <ol class="planList">
-          ${warmup ? `<li><strong>Quick Warm-Up</strong><br><span class="muted">${warmup.label}</span></li>` : ''}
-          <li><strong>Today’s Lesson:</strong> ${selectedLesson.displayId} — ${selectedLesson.title}</li>
-        </ol>
-      </div>
-      <div class="heroActions">
-        ${warmup ? `<div class="notice smallNotice">Quick Warm-Up is ready.</div>` : ''}
-        <button type="button" class="primary" id="startLesson">Start Today’s Work</button>
-        <button type="button" class="secondary" id="viewProgressMap">View Progress Map</button>
-      </div>
-    </section>
-    <section class="grid two">
-      <div class="card">
-        <h2>Choose Level</h2>
-        <select class="select" id="levelSelect">
-          ${levels.map(level => `<option value="${level.id}" ${level.id === state.student.currentLevel ? 'selected' : ''} ${level.status !== 'available' ? 'disabled' : ''}>${level.id} — ${level.title}${level.status !== 'available' ? ' (Coming soon)' : ''}</option>`).join('')}
-        </select>
-      </div>
-      <div class="card">
-        <h2>Current Work</h2>
-        <p class="bigLabel">${selectedLesson.displayId}</p>
-        <p class="muted">${selectedLesson.title}</p>
-      </div>
-    </section>
-  `);
-  setButton('startLesson', startSession);
-  setButton('viewProgressMap', () => { screen = 'progressMap'; render(); });
-  document.getElementById('levelSelect').onchange = (event) => {
-    const nextLevel = levels.find(level => level.id === event.target.value);
-    if (!nextLevel || nextLevel.status !== 'available') return;
-    state.student.currentLevel = nextLevel.id;
-    saveState(state);
-    renderStudentHome();
-  };
-}
-
-function startSession() {
-  const warmup = activeWarmup();
-  if (warmup) {
-    session = createWarmupSession(warmup);
-    screen = 'warmup';
-  } else {
-    startLessonOnly();
+  const vals = Array.from(set).slice(0, 4);
+  for (let i = vals.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [vals[i], vals[j]] = [vals[j], vals[i]];
   }
-  render();
+  return vals;
 }
-
-function createWarmupSession(warmup) {
+function makeQuestion(lesson, idx, source = 'lesson') {
+  const answer = 1 + ((idx * 2 + lesson.lessonNumber) % lesson.max);
+  const prompt = lesson.skill.includes('number_reading') ? `Choose ${answer}.` : 'How many?';
+  const display = lesson.skill.includes('number_reading') ? String(answer) : displayDots(answer);
   return {
-    mode: 'warmup',
-    startTime: Date.now(),
-    date: todayIso(),
-    warmup,
-    questions: generateQuestionsForWarmup(warmup),
-    index: 0,
-    answerLog: [],
-    practiceItems: [],
-    practiceLog: [],
-    cleared: false
+    id: `${source}-${lesson.displayId}-${idx}-${Date.now()}`,
+    source,
+    skill: lesson.skill,
+    prompt,
+    display,
+    answer,
+    choices: safeChoices(answer, 1, lesson.max),
+    slowThresholdMs: lesson.max <= 5 ? 6500 : 9000,
+    hadWrongAttempt: false,
+    wrongAttempts: 0
   };
 }
-
+function lessonQuestions(lesson) { return Array.from({ length: 10 }, (_, i) => makeQuestion(lesson, i + 1, 'lesson')); }
+function warmupQuestions(warmup) {
+  const from = warmup.from || 1;
+  const to = warmup.to || from;
+  const nums = [];
+  for (let n = from; n <= Math.min(to, from + 4); n++) nums.push(n);
+  return nums.map((n, i) => makeQuestion(lessonByNum(n), i + 1, 'warmup'));
+}
+function practiceItemsFrom(log) {
+  const weak = log.filter(x => x.wasWrongFirstTry || x.wasSlow);
+  return weak.map((entry, i) => {
+    const base = lessons.find(l => l.skill === entry.skill) || currentLesson();
+    const q = makeQuestion(base, i + 30, 'practice');
+    q.answer = entry.answer;
+    q.display = entry.display;
+    q.choices = safeChoices(q.answer, 1, base.max);
+    q.prompt = 'Try this one again.';
+    return q;
+  });
+}
+function recommendationFrom(record) {
+  if (record.practiceItemCount > 0 || record.wrongFirstTry > 0 || record.slowCorrect > 0) {
+    return { type: 'lesson_range', level: '6A', from: Math.max(1, state.student.currentLessonNumber - 1), to: state.student.currentLessonNumber, label: 'Review today’s tricky items' };
+  }
+  return null;
+}
+function shell(content) {
+  app.innerHTML = `<header class="topbar"><div><div class="brand">Math Stepwise</div><div class="subtle">Small steps. Clear mastery.</div></div><nav><button type="button" class="ghost" data-action="student">Student View</button><button type="button" class="ghost" data-action="parent">Parent View</button></nav></header><main>${content}</main>`;
+}
+function render() {
+  if (screen === 'student') return renderStudent();
+  if (screen === 'lesson') return renderLesson();
+  if (screen === 'warmup') return renderWarmup();
+  if (screen === 'practice') return renderPractice();
+  if (screen === 'end') return renderEnd();
+  if (screen === 'progress') return renderProgress();
+  if (screen === 'parentGate') return renderParentGate();
+  if (screen === 'parent') return renderParent();
+  if (screen === 'studentInfo') return renderStudentInfo();
+  if (screen === 'dailyRecord') return renderDailyRecord();
+  if (screen === 'assign') return renderAssign();
+}
+function renderStudent() {
+  const lesson = currentLesson();
+  const warmup = activeWarmup();
+  shell(`<section class="hero card"><div><p class="eyebrow">Today: ${fmtDate()}</p><h1>Hi, ${state.student.name}</h1><p class="muted">Today’s Plan</p><ol class="planList">${warmup ? `<li><strong>Quick Warm-Up</strong><br><span class="muted">${warmup.label}</span></li>` : ''}<li><strong>Today’s Lesson:</strong> ${lesson.displayId} — ${lesson.title}</li></ol></div><div class="heroActions"><button type="button" class="primary" data-action="start">Start Today’s Work</button><button type="button" class="secondary" data-action="progress">View Progress Map</button></div></section><section class="grid two"><div class="card"><h2>Choose Level</h2><select class="select" data-change="level">${levels.map(l => `<option value="${l.id}" ${l.id === state.student.currentLevel ? 'selected' : ''} ${l.status !== 'available' ? 'disabled' : ''}>${l.id} — ${l.title}${l.status !== 'available' ? ' (Locked)' : ''}</option>`).join('')}</select></div><div class="card"><h2>Current Work</h2><p class="bigLabel">${lesson.displayId}</p><p class="muted">${lesson.title}</p></div></section>`);
+}
+function startToday() {
+  const w = activeWarmup();
+  if (w) {
+    session = { mode: 'warmup', date: todayIso(), startTime: Date.now(), warmup: w, questions: warmupQuestions(w), index: 0, answerLog: [] };
+    screen = 'warmup';
+  } else startLessonOnly();
+  render();
+}
 function startLessonOnly() {
-  session = {
-    mode: 'lesson',
-    startTime: Date.now(),
-    date: todayIso(),
-    lesson: selectedLesson,
-    questions: generateLessonQuestions(selectedLesson),
-    index: 0,
-    answerLog: [],
-    practiceItems: [],
-    practiceLog: [],
-    result: null,
-    mastered: false
-  };
+  session = { mode: 'lesson', date: todayIso(), startTime: Date.now(), lesson: currentLesson(), questions: lessonQuestions(currentLesson()), index: 0, answerLog: [], practiceItems: [], practiceLog: [], mastered: false };
   screen = 'lesson';
 }
-
-function questionHtml(q, progressText, helper = 'Take your time. Do your best.') {
-  return `
-    <section class="card lessonCard">
-      <p class="eyebrow">${progressText}</p>
-      <h1>${q.prompt}</h1>
-      <div class="questionDisplay">${q.display}</div>
-      <div class="choices">${q.choices.map(c => `<button type="button" class="choice" data-choice="${c}">${c}</button>`).join('')}</div>
-      <p class="muted">${helper}</p>
-    </section>
-  `;
+function qHtml(q, label, helper) {
+  return `<section class="card lessonCard"><p class="eyebrow">${label}</p><h1>${q.prompt}</h1><div class="questionDisplay">${q.display}</div><div class="choices">${q.choices.map(c => `<button type="button" class="choice" data-answer="${c}">${c}</button>`).join('')}</div><p class="muted">${helper}</p><div id="feedback"></div></section>`;
 }
-
 function renderLesson() {
-  if (!ensureSessionFor('lesson')) return;
+  if (!session) { screen = 'student'; return render(); }
   const q = session.questions[session.index];
-  if (!q) { finishLessonBlock(); return; }
-  shell(questionHtml(q, `${selectedLesson.displayId} • Question ${session.index + 1} of ${session.questions.length}`));
-  attachChoiceHandlers(q, 'lesson');
+  if (!q) return finishLesson();
+  shell(qHtml(q, `${session.lesson.displayId} • Question ${session.index + 1} of ${session.questions.length}`, 'Take your time. Do your best.'));
 }
-
 function renderWarmup() {
-  if (!ensureSessionFor('warmup')) return;
+  if (!session) { screen = 'student'; return render(); }
   const q = session.questions[session.index];
-  if (!q) { finishWarmup(); return; }
-  shell(questionHtml(q, `Quick Warm-Up • ${session.index + 1} of ${session.questions.length}`, 'Let’s practice a few before today’s lesson.'));
-  attachChoiceHandlers(q, 'warmup');
+  if (!q) { state.manualWarmup = null; state.appRecommendedWarmup = null; saveState(); startLessonOnly(); return render(); }
+  shell(qHtml(q, `Quick Warm-Up • ${session.index + 1} of ${session.questions.length}`, 'Let’s practice a few before today’s lesson.'));
 }
-
-function renderPracticeAgain() {
-  if (!ensureSessionFor('practice')) return;
-  if (!session.practiceItems || session.practiceItems.length === 0 || session.index >= session.practiceItems.length) { finishPracticeAgain(); return; }
+function renderPractice() {
+  if (!session) { screen = 'student'; return render(); }
   const q = session.practiceItems[session.index];
-  const left = Math.max(1, session.practiceItems.length - session.index);
-  const helper = q.wrongAttempts >= 2 ? 'Try counting slowly one by one. You can do it.' : 'Let’s clear each item correctly.';
-  shell(questionHtml(q, `Practice Again • ${left} left`, helper));
-  attachChoiceHandlers(q, 'practice');
+  if (!q) return finishPractice();
+  const left = session.practiceItems.length - session.index;
+  shell(qHtml(q, `Practice Again • ${left} left`, 'Let’s clear each item correctly.'));
 }
-
-function attachChoiceHandlers(q, mode) {
-  const shownAt = Date.now();
-  let acceptedCorrect = false;
-  document.querySelectorAll('.choice').forEach(btn => btn.onclick = (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    if (acceptedCorrect || !session) return;
-    const chosen = Number(btn.dataset.choice);
-    const correct = chosen === q.answer;
-    const elapsed = Date.now() - shownAt;
-
-    if (!correct) {
-      q.hadWrongAttempt = true;
-      q.wrongAttempts = (q.wrongAttempts || 0) + 1;
-      if (mode === 'practice') {
-        q.practiceMissed = true;
-        q.guided = q.wrongAttempts >= 2;
-        // Keep the same practice item active until it is answered correctly.
-        // Do not expand the queue during practice; this prevents 4+ mistakes from freezing or creating endless extra work.
-      }
-      showGentleTryAgain(q);
-      return;
-    }
-
-    acceptedCorrect = true;
-    disableChoices();
-
-    const entry = {
-      questionId: q.id,
-      skill: q.skill,
-      source: q.source,
-      answer: q.answer,
-      chosen,
-      finalCorrect: true,
-      wasWrongFirstTry: Boolean(q.hadWrongAttempt),
-      wasSlow: elapsed > q.slowThresholdMs,
-      elapsedMs: elapsed,
-      wrongAttempts: q.wrongAttempts || 0,
-      display: q.display,
-      prompt: q.prompt
-    };
-
-    if (mode === 'lesson') {
-      session.answerLog.push(entry);
-      session.index += 1;
-      if (session.index >= session.questions.length) finishLessonBlock();
-      else renderLesson();
-      return;
-    }
-
-    if (mode === 'warmup') {
-      session.answerLog.push(entry);
-      session.index += 1;
-      if (session.index >= session.questions.length) finishWarmup();
-      else renderWarmup();
-      return;
-    }
-
-    session.practiceLog.push(entry);
-    session.index += 1;
-    if (session.index >= session.practiceItems.length) finishPracticeAgain();
-    else renderPracticeAgain();
-  });
-}
-
-function showGentleTryAgain(q) {
-  const card = document.querySelector('.lessonCard');
-  const existing = document.querySelector('.feedback');
-  if (existing) existing.remove();
-  const guided = q.wrongAttempts >= 2 ? ' Try counting slowly one by one.' : '';
-  card.insertAdjacentHTML('beforeend', `<div class="feedback">Almost. Let’s try this one again.${guided}</div>`);
-}
-
-function finishWarmup() {
-  // Quick Warm-Up is cleared only after all warm-up items were answered correctly.
-  state.manualWarmup = null;
-  state.appRecommendedWarmup = null;
-  saveState(state);
-  startLessonOnly();
-  render();
-}
-
-function finishLessonBlock() {
-  if (!ensureSessionFor('lesson')) return;
-  const elapsedMs = Date.now() - session.startTime;
-  const result = evaluateLesson({ answerLog: session.answerLog, elapsedMs, lesson: selectedLesson });
-  session.result = result;
-  session.practiceItems = generatePracticeItems(session.answerLog);
-
-  if (session.practiceItems.length > 0) {
-    session.index = 0;
-    screen = 'practice';
-    render();
-  } else {
-    finishPracticeAgain();
+function chooseAnswer(value) {
+  if (!session) return;
+  const list = session.mode === 'practice' ? session.practiceItems : session.questions;
+  const q = list[session.index];
+  if (!q) return;
+  const chosen = Number(value);
+  const correct = chosen === q.answer;
+  const elapsed = Date.now() - (q.shownAt || (q.shownAt = Date.now()));
+  if (!correct) {
+    q.hadWrongAttempt = true;
+    q.wrongAttempts += 1;
+    const fb = document.getElementById('feedback');
+    if (fb) fb.innerHTML = `<div class="feedback">Almost. Try this one again.${q.wrongAttempts >= 2 ? ' Count slowly one by one.' : ''}</div>`;
+    return;
   }
+  const entry = { questionId: q.id, skill: q.skill, answer: q.answer, finalCorrect: true, wasWrongFirstTry: q.hadWrongAttempt, wasSlow: elapsed > q.slowThresholdMs, wrongAttempts: q.wrongAttempts, elapsedMs: elapsed, display: q.display };
+  if (session.mode === 'practice') session.practiceLog.push(entry);
+  else session.answerLog.push(entry);
+  session.index += 1;
+  if (session.mode === 'lesson') renderLesson();
+  else if (session.mode === 'warmup') renderWarmup();
+  else renderPractice();
 }
-
-function finishPracticeAgain() {
-  if (!ensureSessionFor('practice')) return;
-  // This function is reachable only after each practice item has been answered correctly.
+function finishLesson() {
+  session.practiceItems = practiceItemsFrom(session.answerLog);
+  if (session.practiceItems.length) { session.mode = 'practice'; session.index = 0; screen = 'practice'; return render(); }
+  finishPractice();
+}
+function finishPractice() {
   const elapsedMs = Date.now() - session.startTime;
-  const lessonScore = `${session.answerLog.filter(e => !e.wasWrongFirstTry).length}/${session.answerLog.length}`;
-  const practiceNeeded = session.practiceItems.length > 0 ? `Yes — ${session.practiceItems.length} item${session.practiceItems.length === 1 ? '' : 's'}` : 'No';
-  const practiceRetries = session.practiceLog.reduce((sum, item) => sum + item.wrongAttempts, 0);
-  const practiceResult = session.practiceItems.length > 0 ? (practiceRetries > 0 ? 'Cleared after repeats' : 'Cleared') : 'Not needed';
-  const recommendation = makeNextPracticeRecommendation({
-    lesson: selectedLesson,
-    answerLog: session.answerLog,
-    practiceLog: session.practiceLog,
-    practiceItemCount: session.practiceItems.length
-  });
-  const mastered = session.result?.completed === true && practiceResult !== 'Still needs review';
-  const finalStatus = mastered ? 'Mastered' : 'Needs Review';
-  const nextPractice = recommendation.practice ? recommendation.label : 'None';
-
-  const record = {
-    date: session.date,
-    displayDate: formatDisplayDate(session.date),
-    level: selectedLesson.level,
-    lesson: selectedLesson.displayId,
-    skill: selectedLesson.title,
-    lessonScore,
-    practiceNeeded,
-    practiceResult,
-    time: msToText(elapsedMs),
-    timeMs: elapsedMs,
-    finalStatus,
-    nextPractice,
-    recommendation: recommendation.message,
-    wrongFirstTry: session.answerLog.filter(e => e.wasWrongFirstTry).length,
-    slowCorrect: session.answerLog.filter(e => e.wasSlow).length,
-    practiceItemCount: session.practiceItems.length,
-    mastered
-  };
-
-  state.dailyRecords.unshift(record);
-  if (mastered && !state.mastered.includes(selectedLesson.displayId)) state.mastered.push(selectedLesson.displayId);
-  if (recommendation.practice) state.appRecommendedWarmup = recommendation.practice;
+  const wrongFirstTry = session.answerLog.filter(e => e.wasWrongFirstTry).length;
+  const slowCorrect = session.answerLog.filter(e => e.wasSlow).length;
+  const practiceItemCount = session.practiceItems.length;
+  const lessonScore = `${session.answerLog.length - wrongFirstTry}/${session.answerLog.length}`;
+  const practiceRetries = session.practiceLog.reduce((s, e) => s + e.wrongAttempts, 0);
+  const record = { date: session.date, displayDate: fmtDate(session.date), level: session.lesson.level, lesson: session.lesson.displayId, lessonScore, practiceNeeded: practiceItemCount ? `Yes — ${practiceItemCount} item${practiceItemCount === 1 ? '' : 's'}` : 'No', practiceResult: practiceItemCount ? (practiceRetries ? 'Cleared after repeats' : 'Cleared') : 'Not needed', time: msToText(elapsedMs), timeMs: elapsedMs, finalStatus: 'Mastered', nextPractice: 'None', recommendation: 'Continue to next lesson.', wrongFirstTry, slowCorrect, practiceItemCount, mastered: true };
+  const reco = recommendationFrom(record);
+  if (reco) { state.appRecommendedWarmup = reco; record.nextPractice = reco.label; record.recommendation = `${reco.label} will appear as Quick Warm-Up next session.`; }
   else state.appRecommendedWarmup = null;
-
-  session.mastered = mastered;
-  state.lastCompletedLessonNumber = selectedLesson.lessonNumber;
-  state.student.currentLessonNumber = Math.min(200, selectedLesson.lessonNumber + 1);
-  saveState(state);
-  screen = 'endChoice';
+  state.dailyRecords.unshift(record);
+  if (!state.mastered.includes(session.lesson.displayId)) state.mastered.push(session.lesson.displayId);
+  state.lastCompletedLessonNumber = session.lesson.lessonNumber;
+  state.student.currentLessonNumber = Math.min(200, session.lesson.lessonNumber + 1);
+  session.mastered = true;
+  saveState();
+  screen = 'end';
   render();
 }
-
-function renderEndChoice() {
-  const canContinue = Boolean(session?.mastered);
-  shell(`
-    <section class="card center">
-      <h1>Great work today!</h1>
-      <p class="muted">Practice is complete. All practice items were answered correctly.</p>
-      <p class="notice ${canContinue ? 'successNotice' : ''}">${canContinue ? 'You are ready to continue if you want more.' : 'Let’s stop here and practice again next time.'}</p>
-      <div class="actions">
-        <button type="button" class="secondary" id="endSession">End Today’s Session</button>
-        <button type="button" class="primary" id="continueLesson" ${canContinue ? '' : 'disabled'}>Continue to Next Lesson</button>
-      </div>
-    </section>
-  `);
-  setButton('endSession', safeToStudent);
-  setButton('continueLesson', () => {
-    if (!canContinue) return;
-    selectedLesson = lessonByNumber(state.student.currentLessonNumber);
-    startLessonOnly();
-    render();
-  });
+function renderEnd() {
+  shell(`<section class="card center"><h1>Great work today!</h1><p class="muted">Practice is complete. All practice items were answered correctly.</p><p class="notice successNotice">You are ready to continue if you want more.</p><div class="actions"><button type="button" class="secondary" data-action="endSession">End Today’s Session</button><button type="button" class="primary" data-action="continueLesson">Continue to Next Lesson</button></div></section>`);
 }
-
-
-function lessonStatus(lesson) {
-  if (state.mastered.includes(lesson.displayId)) return 'mastered';
-  if (lesson.lessonNumber === state.student.currentLessonNumber) return 'current';
-  if (lesson.lessonNumber < state.student.currentLessonNumber) return 'review';
+function renderProgress() {
+  const cur = currentLesson();
+  const counts = { mastered: 0, review: 0, current: 0, locked: 0 };
+  lessons.forEach(l => counts[lessonStatus(l)]++);
+  shell(`<section class="card"><button type="button" class="ghost" data-action="student">← Back to Student Home</button><h1>Level 6A Progress Map</h1><p class="muted">Green = mastered. Amber = review. Purple = current. Gray = locked.</p><div class="legend"><span><b class="dot masteredDot"></b> Mastered</span><span><b class="dot reviewDot"></b> Review</span><span><b class="dot currentDot"></b> Current</span><span><b class="dot lockedDot"></b> Locked</span></div></section><section class="grid four"><div class="card"><p class="muted">Mastered</p><p class="metric">${counts.mastered}</p></div><div class="card"><p class="muted">Review</p><p class="metric">${counts.review}</p></div><div class="card"><p class="muted">Current</p><p class="metric small">${cur.displayId}</p></div><div class="card"><p class="muted">Locked</p><p class="metric">${counts.locked}</p></div></section><section class="card"><div class="hero"><div><h2>Unit 1: Counting up to 5</h2><p class="muted">Lessons 6A-1 to 6A-40 shown in this preview.</p></div><button type="button" class="primary" data-action="start">Start ${cur.displayId}</button></div><div class="lessonMap">${lessons.slice(0,40).map(l => `<button type="button" class="lessonTile ${lessonStatus(l)}" ${lessonStatus(l) === 'current' ? 'data-action="start"' : 'disabled'}>${lessonStatus(l) === 'locked' ? '🔒' : l.displayId}</button>`).join('')}</div></section>`);
+}
+function lessonStatus(l) {
+  if (state.mastered.includes(l.displayId)) return 'mastered';
+  if (l.lessonNumber === state.student.currentLessonNumber) return 'current';
+  if (l.lessonNumber < state.student.currentLessonNumber) return 'review';
   return 'locked';
 }
-
-function renderProgressMap() {
-  const counts = level6ALessons.reduce((acc, lesson) => {
-    const status = lessonStatus(lesson);
-    acc[status] = (acc[status] || 0) + 1;
-    return acc;
-  }, {});
-  shell(`
-    <section class="card">
-      <button type="button" class="ghost" id="backStudent">← Back to Student Home</button>
-      <h1>Level 6A Progress Map</h1>
-      <p class="muted">Green = mastered. Amber = review. Purple = current. Gray = locked.</p>
-      <div class="legend">
-        <span><b class="dot masteredDot"></b> Mastered</span>
-        <span><b class="dot reviewDot"></b> Review</span>
-        <span><b class="dot currentDot"></b> Current</span>
-        <span><b class="dot lockedDot"></b> Locked</span>
-      </div>
-    </section>
-    <section class="grid four">
-      <div class="card"><p class="muted">Mastered</p><p class="metric">${counts.mastered || 0}</p></div>
-      <div class="card"><p class="muted">Review</p><p class="metric">${counts.review || 0}</p></div>
-      <div class="card"><p class="muted">Current</p><p class="metric small">${selectedLesson.displayId}</p></div>
-      <div class="card"><p class="muted">Locked</p><p class="metric">${counts.locked || 0}</p></div>
-    </section>
-    <section class="card">
-      <div class="progressMapHeader">
-        <div>
-          <h2>Unit 1: Counting up to 5</h2>
-          <p class="muted">Lessons 6A-1 to 6A-40 shown in this preview.</p>
-        </div>
-        <button type="button" class="primary" id="startCurrentFromMap">Start ${selectedLesson.displayId}</button>
-      </div>
-      <div class="lessonMap progressOnly">
-        ${level6ALessons.slice(0, 40).map(lesson => {
-          const status = lessonStatus(lesson);
-          const isCurrent = status === 'current';
-          const label = status === 'locked' ? '🔒' : lesson.displayId;
-          return `<button type="button" class="lessonTile ${status}" data-lesson="${lesson.lessonNumber}" ${isCurrent ? '' : 'disabled'} title="${lesson.displayId} — ${lesson.title}">${label}</button>`;
-        }).join('')}
-      </div>
-      <p class="muted">Only the current lesson can be started from this map. Future lessons stay locked.</p>
-    </section>
-  `);
-  setButton('backStudent', () => { screen = 'student'; render(); });
-  setButton('startCurrentFromMap', startSession);
-  document.querySelectorAll('.lessonTile.current').forEach(btn => btn.onclick = () => {
-    selectedLesson = lessonByNumber(btn.dataset.lesson);
-    state.student.currentLessonNumber = selectedLesson.lessonNumber;
-    saveState(state);
-    startSession();
-  });
-}
-
 function renderParentGate() {
-  shell(`
-    <section class="card center parentGate">
-      <h1>Parent Code</h1>
-      <p class="muted">Enter the parent code to open Parent View.</p>
-      <input id="parentCode" class="codeInput" type="password" inputmode="numeric" placeholder="Enter code" autocomplete="off">
-      <div id="codeError" class="feedback hidden">Incorrect code. Try again.</div>
-      <div class="actions">
-        <button type="button" class="secondary" id="backToStudent">Back to Student View</button>
-        <button type="button" class="primary" id="unlockParent">Unlock Parent View</button>
-      </div>
-      <p class="muted smallText">Demo parent code: 1234</p>
-    </section>
-  `);
-  const input = document.getElementById('parentCode');
-  const error = document.getElementById('codeError');
-  const unlock = () => {
-    if (input.value === '1234') {
-      parentUnlocked = true;
-      screen = 'parent';
-      render();
-    } else {
-      error.classList.remove('hidden');
-      input.focus();
-    }
-  };
-  setButton('backToStudent', () => { parentUnlocked = false; screen = 'student'; render(); });
-  setButton('unlockParent', unlock);
-  input.onkeydown = (event) => { if (event.key === 'Enter') unlock(); };
-  input.oninput = () => error.classList.add('hidden');
-  input.focus();
+  shell(`<section class="card center parentGate"><h1>Parent Code</h1><p class="muted">Enter the parent code to open Parent View.</p><input id="parentCode" class="codeInput" type="password" inputmode="numeric" placeholder="Enter code" autocomplete="off"><div id="codeError" class="feedback hidden">Incorrect code. Try again.</div><div class="actions"><button type="button" class="secondary" data-action="student">Back to Student View</button><button type="button" class="primary" data-action="unlockParent">Unlock Parent View</button></div><p class="muted smallText">Demo parent code: 1234</p></section>`);
+  setTimeout(() => document.getElementById('parentCode')?.focus(), 0);
 }
-
 function renderParent() {
   const warmup = activeWarmup();
-  shell(`
-    <section class="hero card">
-      <div>
-        <p class="eyebrow">Parent View</p>
-        <h1>${state.student.name}'s Progress</h1>
-        <p class="muted">Review records, assign next-session Quick Warm-Up, or reset progress.</p>
-      </div>
-      <div class="heroActions">
-        <button type="button" class="ghost" id="studentInfo">Student Information</button>
-        <button type="button" class="ghost" id="dailyRecord">Daily Work Record</button>
-        <button type="button" class="ghost" id="assignPractice">Assign Warm-Up</button>
-      </div>
-    </section>
-    <section class="grid three">
-      <div class="card"><p class="muted">Mastered</p><p class="metric">${state.mastered.length}</p></div>
-      <div class="card"><p class="muted">Records</p><p class="metric">${state.dailyRecords.length}</p></div>
-      <div class="card"><p class="muted">Next Quick Warm-Up</p><p class="metric small">${warmup ? `${warmup.label}<br><span>${warmup.source}</span>` : 'None'}</p></div>
-    </section>
-    <section class="card">
-      <h2>Parent Settings</h2>
-      <p class="muted">Reset is parent-only and clears progress saved on this device.</p>
-      <button type="button" class="danger" id="resetProgress">Reset Student Progress</button>
-    </section>
-  `);
-  setButton('studentInfo', () => { screen = 'studentInfo'; render(); });
-  setButton('dailyRecord', () => { screen = 'dailyRecord'; render(); });
-  setButton('assignPractice', () => { screen = 'assignPractice'; render(); });
-  setButton('resetProgress', () => {
-    if (confirm('Are you sure you want to reset all student progress on this device?')) {
-      state = resetStudentProgress();
-      selectedLesson = lessonByNumber(1);
-      session = null;
-      parentUnlocked = false;
-      recordFilters = { from: '', to: '', level: 'all' };
-      assignForm = { level: state.student.currentLevel, from: 1, to: 1 };
-      screen = 'student';
-      render();
-    }
-  });
+  shell(`<section class="hero card"><div><p class="eyebrow">Parent View</p><h1>${state.student.name}'s Progress</h1><p class="muted">Review records, assign next-session Quick Warm-Up, or reset progress.</p></div><div class="heroActions"><button type="button" class="ghost" data-action="studentInfo">Student Information</button><button type="button" class="ghost" data-action="dailyRecord">Daily Work Record</button><button type="button" class="ghost" data-action="assign">Assign Warm-Up</button></div></section><section class="grid three"><div class="card"><p class="muted">Mastered</p><p class="metric">${state.mastered.length}</p></div><div class="card"><p class="muted">Records</p><p class="metric">${state.dailyRecords.length}</p></div><div class="card"><p class="muted">Next Quick Warm-Up</p><p class="metric small">${warmup ? `${warmup.label}<br><span>${warmup.source}</span>` : 'None'}</p></div></section><section class="card"><h2>Parent Settings</h2><p class="muted">Reset is parent-only and clears progress saved on this device.</p><button type="button" class="danger" data-action="reset">Reset Student Progress</button></section>`);
 }
-
 function renderStudentInfo() {
-  shell(`
-    <section class="card">
-      <button type="button" class="ghost" id="back">← Back</button>
-      <h1>Student Information</h1>
-      <div class="infoGrid">
-        <div><span>Student Name</span><strong>${state.student.name}</strong></div>
-        <div><span>Date of Enrollment</span><strong>${formatDisplayDate(state.student.enrollmentDate)}</strong></div>
-        <div><span>Starting Level</span><strong>${state.student.startingLevel}</strong></div>
-        <div><span>Current Level</span><strong>${state.student.currentLevel}</strong></div>
-        <div><span>Current Lesson</span><strong>${selectedLesson.displayId}</strong></div>
-        <div><span>Parent / Guardian</span><strong>${state.student.parentName}</strong></div>
-        <div><span>Notes</span><strong>${state.student.notes}</strong></div>
-      </div>
-    </section>
-  `);
-  setButton('back', () => { screen = 'parent'; render(); });
+  shell(`<section class="card"><button type="button" class="ghost" data-action="parentHome">← Back</button><h1>Student Information</h1><div class="infoGrid"><div><span>Student Name</span><strong>${state.student.name}</strong></div><div><span>Date of Enrollment</span><strong>${fmtDate(state.student.enrollmentDate)}</strong></div><div><span>Starting Level</span><strong>${state.student.startingLevel}</strong></div><div><span>Current Level</span><strong>${state.student.currentLevel}</strong></div><div><span>Current Lesson</span><strong>${currentLesson().displayId}</strong></div><div><span>Parent / Guardian</span><strong>${state.student.parentName}</strong></div><div><span>Notes</span><strong>${state.student.notes}</strong></div></div></section>`);
 }
-
-function filteredRecords() {
-  return state.dailyRecords.filter((r) => {
-    const byLevel = recordFilters.level === 'all' || r.level === recordFilters.level;
-    const byFrom = !recordFilters.from || r.date >= recordFilters.from;
-    const byTo = !recordFilters.to || r.date <= recordFilters.to;
-    return byLevel && byFrom && byTo;
-  }).slice().sort((a, b) => a.date.localeCompare(b.date));
-}
-
-function recordsByDate(records) {
-  const map = new Map();
-  records.forEach((r) => {
-    const day = r.date;
-    if (!map.has(day)) map.set(day, []);
-    map.get(day).push(r);
-  });
-  return [...map.entries()].map(([date, list]) => ({ date, list }));
-}
-
-function barChart(title, rows, getValue, emptyText) {
-  const values = rows.map(row => getValue(row));
-  const max = Math.max(1, ...values);
-  if (!rows.length) return `<div class="chart"><h3>${title}</h3><p class="muted">${emptyText}</p></div>`;
-  return `<div class="chart"><h3>${title}</h3><div class="bars">${rows.map((row, i) => {
-    const val = values[i];
-    const height = Math.max(8, Math.round((val / max) * 110));
-    return `<div class="barItem"><div class="barValue">${val}</div><div class="bar" style="height:${height}px"></div><div class="barLabel">${row.date.slice(5)}</div></div>`;
-  }).join('')}</div></div>`;
-}
-
+function filteredRecords() { return state.dailyRecords.filter(r => (recordFilters.level === 'all' || r.level === recordFilters.level) && (!recordFilters.from || r.date >= recordFilters.from) && (!recordFilters.to || r.date <= recordFilters.to)).sort((a,b) => a.date.localeCompare(b.date)); }
 function renderDailyRecord() {
   const rows = filteredRecords();
-  const grouped = recordsByDate(rows);
-  const progressGraph = barChart('Progress Graph', grouped, row => row.list.filter(r => r.mastered).length, 'No completed work for this range.');
-  const repetitionGraph = barChart('Practice & Repetition Graph', grouped, row => row.list.reduce((sum, r) => sum + (r.practiceItemCount || 0) + (r.wrongFirstTry || 0), 0), 'No practice data for this range.');
-  const summary = buildRecordSummary(rows);
-  shell(`
-    <section class="card">
-      <button type="button" class="ghost" id="back">← Back</button>
-      <h1>Daily Work Record</h1>
-      <p class="muted">Default view shows the entire recorded progress. Use filters to review a specific range.</p>
-      <div class="filters">
-        <label>From <input type="date" id="fromDate" value="${recordFilters.from}"></label>
-        <label>To <input type="date" id="toDate" value="${recordFilters.to}"></label>
-        <label>Level <select id="recordLevel"><option value="all" ${recordFilters.level === 'all' ? 'selected' : ''}>All levels</option>${levels.map(level => `<option value="${level.id}" ${recordFilters.level === level.id ? 'selected' : ''}>${level.id}</option>`).join('')}</select></label>
-        <button type="button" class="secondary" id="clearFilters">Entire Progress</button>
-      </div>
-    </section>
-    <section class="grid two">${progressGraph}${repetitionGraph}</section>
-    <section class="card">
-      <h2>Summary</h2>
-      <p>${summary}</p>
-    </section>
-    <section class="card">
-      <h2>Records</h2>
-      <div class="tableWrap"><table><thead><tr><th>Date</th><th>Lesson</th><th>Lesson Score</th><th>Practice Needed</th><th>Practice Result</th><th>Time</th><th>Final Status</th><th>Next Practice</th><th>Recommendation</th></tr></thead><tbody>
-        ${(rows.length ? rows.slice().reverse() : [{ displayDate: 'No records yet', lesson: '-', lessonScore: '-', practiceNeeded: '-', practiceResult: '-', time: '-', finalStatus: '-', nextPractice: '-', recommendation: 'Complete a lesson to see recommendations.' }]).map(r => `<tr><td>${r.displayDate}</td><td>${r.lesson}</td><td>${r.lessonScore}</td><td>${r.practiceNeeded}</td><td>${r.practiceResult}</td><td>${r.time}</td><td>${r.finalStatus}</td><td>${r.nextPractice}</td><td>${r.recommendation}</td></tr>`).join('')}
-      </tbody></table></div>
-    </section>
-  `);
-  setButton('back', () => { screen = 'parent'; render(); });
-  document.getElementById('fromDate').onchange = (e) => { recordFilters.from = e.target.value; renderDailyRecord(); };
-  document.getElementById('toDate').onchange = (e) => { recordFilters.to = e.target.value; renderDailyRecord(); };
-  document.getElementById('recordLevel').onchange = (e) => { recordFilters.level = e.target.value; renderDailyRecord(); };
-  setButton('clearFilters', () => { recordFilters = { from: '', to: '', level: 'all' }; renderDailyRecord(); });
+  const grouped = [...rows.reduce((m,r)=>m.set(r.date,[...(m.get(r.date)||[]),r]),new Map()).entries()].map(([date,list])=>({date,list}));
+  const chart = (title, getValue) => { const vals = grouped.map(getValue); const max = Math.max(1,...vals); return `<div class="chart"><h3>${title}</h3>${grouped.length ? `<div class="bars">${grouped.map((g,i)=>`<div class="barItem"><div class="barValue">${vals[i]}</div><div class="bar" style="height:${Math.max(8,Math.round(vals[i]/max*110))}px"></div><div class="barLabel">${g.date.slice(5)}</div></div>`).join('')}</div>` : '<p class="muted">No data for this range.</p>'}</div>`; };
+  shell(`<section class="card"><button type="button" class="ghost" data-action="parentHome">← Back</button><h1>Daily Work Record</h1><p class="muted">Default view shows the entire recorded progress. Use filters for a specific range.</p><div class="filters"><label>From <input type="date" data-filter="from" value="${recordFilters.from}"></label><label>To <input type="date" data-filter="to" value="${recordFilters.to}"></label><label>Level <select data-filter="level"><option value="all" ${recordFilters.level==='all'?'selected':''}>All levels</option>${levels.map(l=>`<option value="${l.id}" ${recordFilters.level===l.id?'selected':''}>${l.id}</option>`).join('')}</select></label><button type="button" class="secondary" data-action="clearFilters">Entire Progress</button></div></section><section class="grid two">${chart('Progress Graph', g => g.list.filter(r=>r.mastered).length)}${chart('Practice & Repetition Graph', g => g.list.reduce((s,r)=>s+(r.practiceItemCount||0)+(r.wrongFirstTry||0),0))}</section><section class="card"><h2>Records</h2><div class="tableWrap"><table><thead><tr><th>Date</th><th>Lesson</th><th>Lesson Score</th><th>Practice Needed</th><th>Practice Result</th><th>Time</th><th>Final Status</th><th>Next Practice</th><th>Recommendation</th></tr></thead><tbody>${(rows.length?rows.slice().reverse():[{displayDate:'No records yet',lesson:'-',lessonScore:'-',practiceNeeded:'-',practiceResult:'-',time:'-',finalStatus:'-',nextPractice:'-',recommendation:'Complete a lesson to see recommendations.'}]).map(r=>`<tr><td>${r.displayDate}</td><td>${r.lesson}</td><td>${r.lessonScore}</td><td>${r.practiceNeeded}</td><td>${r.practiceResult}</td><td>${r.time}</td><td>${r.finalStatus}</td><td>${r.nextPractice}</td><td>${r.recommendation}</td></tr>`).join('')}</tbody></table></div></section>`);
+}
+function isAssignable(id) { return levelOrder.indexOf(id) <= levelOrder.indexOf(state.student.currentLevel); }
+function renderAssign() {
+  const max = 200;
+  shell(`<section class="card"><button type="button" class="ghost" data-action="parentHome">← Back</button><h1>Assign Quick Warm-Up for Next Session</h1><p class="muted">Parent assignment overrides the app recommendation. If you do nothing, the app uses its recommendation automatically.</p><div class="notice">Current app recommendation: ${state.appRecommendedWarmup ? state.appRecommendedWarmup.label : 'None'}</div><div class="formGrid"><label>Level <select data-assign="level">${levels.map(l=>`<option value="${l.id}" ${assignForm.level===l.id?'selected':''} ${!isAssignable(l.id)?'disabled':''}>${l.id} — ${l.title}${isAssignable(l.id)?'':' (Locked)'}</option>`).join('')}</select></label><label>From <select data-assign="from">${Array.from({length:max},(_,i)=>`<option value="${i+1}" ${assignForm.from===i+1?'selected':''}>${assignForm.level}-${i+1}</option>`).join('')}</select></label><label>To <select data-assign="to">${Array.from({length:max},(_,i)=>`<option value="${i+1}" ${assignForm.to===i+1?'selected':''}>${assignForm.level}-${i+1}</option>`).join('')}</select></label></div><div class="actions left"><button type="button" class="primary" data-action="saveAssign">Assign for Next Session</button><button type="button" class="secondary" data-action="clearAssign">Clear Parent Assignment</button></div><p class="muted">Future levels are locked. Current and lower levels stay available.</p></section>`);
 }
 
-function buildRecordSummary(rows) {
-  if (!rows.length) return 'No records yet for this range.';
-  const mastered = rows.filter(r => r.mastered).length;
-  const totalPractice = rows.reduce((sum, r) => sum + (r.practiceItemCount || 0), 0);
-  const latestNext = rows[rows.length - 1]?.nextPractice || 'None';
-  return `${state.student.name} completed ${rows.length} work entr${rows.length === 1 ? 'y' : 'ies'} in this view. ${mastered} mastered. Practice items: ${totalPractice}. Next practice: ${latestNext}.`;
-}
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-action], .choice');
+  if (!btn) return;
+  e.preventDefault();
+  const action = btn.dataset.action;
+  if (btn.classList.contains('choice')) return chooseAnswer(btn.dataset.answer);
+  if (action === 'student') { parentUnlocked = false; session = null; screen = 'student'; return render(); }
+  if (action === 'parent') { screen = parentUnlocked ? 'parent' : 'parentGate'; return render(); }
+  if (action === 'start') return startToday();
+  if (action === 'progress') { screen = 'progress'; return render(); }
+  if (action === 'endSession') { session = null; screen = 'student'; return render(); }
+  if (action === 'continueLesson') { if (!session?.mastered) return; session = null; startLessonOnly(); return render(); }
+  if (action === 'unlockParent') { const input = document.getElementById('parentCode'); const error = document.getElementById('codeError'); if (input?.value === PARENT_CODE) { parentUnlocked = true; screen = 'parent'; render(); } else { error?.classList.remove('hidden'); input?.focus(); } return; }
+  if (action === 'parentHome') { screen = 'parent'; return render(); }
+  if (action === 'studentInfo') { screen = 'studentInfo'; return render(); }
+  if (action === 'dailyRecord') { screen = 'dailyRecord'; return render(); }
+  if (action === 'assign') { screen = 'assign'; return render(); }
+  if (action === 'clearFilters') { recordFilters = { from:'', to:'', level:'all' }; return renderDailyRecord(); }
+  if (action === 'saveAssign') { const from = Math.min(assignForm.from, assignForm.to); const to = Math.max(assignForm.from, assignForm.to); state.manualWarmup = { type:'lesson_range', level:assignForm.level, from, to, label: `${assignForm.level}-${from}${from===to?'':` to ${assignForm.level}-${to}`}` }; saveState(); screen = 'parent'; return render(); }
+  if (action === 'clearAssign') { state.manualWarmup = null; saveState(); screen = 'parent'; return render(); }
+  if (action === 'reset') { if (confirm('Are you sure you want to reset all student progress on this device?')) clearAllProgress(); return; }
+});
 
-function renderAssignPractice() {
-  const availableLevels = levels.map(level => ({ ...level, assignable: isLevelAssignable(level.id) }));
-  const selectedLevel = availableLevels.find(l => l.id === assignForm.level) || availableLevels[0];
-  const maxLesson = selectedLevel.id === '6A' ? 200 : 200;
-  shell(`
-    <section class="card">
-      <button type="button" class="ghost" id="back">← Back</button>
-      <h1>Assign Quick Warm-Up for Next Session</h1>
-      <p class="muted">Parent assignment overrides the app recommendation. If you do nothing, the app uses its recommendation automatically.</p>
-      <div class="notice">Current app recommendation: ${state.appRecommendedWarmup ? state.appRecommendedWarmup.label : 'None'}</div>
-      <div class="formGrid">
-        <label>Level
-          <select id="assignLevel">
-            ${availableLevels.map(level => `<option value="${level.id}" ${assignForm.level === level.id ? 'selected' : ''} ${!level.assignable ? 'disabled' : ''}>${level.id} — ${level.title}${level.assignable ? '' : ' (Locked)'}</option>`).join('')}
-          </select>
-        </label>
-        <label>From
-          <select id="fromLesson">${Array.from({ length: maxLesson }, (_, i) => `<option value="${i + 1}" ${assignForm.from === i + 1 ? 'selected' : ''}>${selectedLevel.id}-${i + 1}</option>`).join('')}</select>
-        </label>
-        <label>To
-          <select id="toLesson">${Array.from({ length: maxLesson }, (_, i) => `<option value="${i + 1}" ${assignForm.to === i + 1 ? 'selected' : ''}>${selectedLevel.id}-${i + 1}</option>`).join('')}</select>
-        </label>
-      </div>
-      <div class="actions left">
-        <button type="button" class="primary" id="assignWarmup">Assign for Next Session</button>
-        <button type="button" class="secondary" id="clearManual">Clear Parent Assignment</button>
-      </div>
-      <p class="muted">Available levels: current level and lower/completed levels. Future levels are locked.</p>
-    </section>
-  `);
-  setButton('back', () => { screen = 'parent'; render(); });
-  document.getElementById('assignLevel').onchange = (e) => { assignForm.level = e.target.value; assignForm.from = 1; assignForm.to = 1; renderAssignPractice(); };
-  document.getElementById('fromLesson').onchange = (e) => { assignForm.from = Number(e.target.value); if (assignForm.to < assignForm.from) assignForm.to = assignForm.from; renderAssignPractice(); };
-  document.getElementById('toLesson').onchange = (e) => { assignForm.to = Number(e.target.value); if (assignForm.to < assignForm.from) assignForm.from = assignForm.to; renderAssignPractice(); };
-  setButton('assignWarmup', () => {
-    const from = Math.min(assignForm.from, assignForm.to);
-    const to = Math.max(assignForm.from, assignForm.to);
-    state.manualWarmup = {
-      type: 'lesson_range',
-      level: assignForm.level,
-      from,
-      to,
-      label: `${assignForm.level}-${from}${from === to ? '' : ` to ${assignForm.level}-${to}`}`,
-      source: 'Parent assigned'
-    };
-    saveState(state);
-    screen = 'parent';
-    render();
-  });
-  setButton('clearManual', () => {
-    state.manualWarmup = null;
-    saveState(state);
-    screen = 'parent';
-    render();
-  });
-}
+document.addEventListener('change', (e) => {
+  if (e.target.matches('[data-change="level"]')) { state.student.currentLevel = e.target.value; saveState(); render(); }
+  if (e.target.matches('[data-filter]')) { recordFilters[e.target.dataset.filter] = e.target.value; renderDailyRecord(); }
+  if (e.target.matches('[data-assign]')) { const key = e.target.dataset.assign; assignForm[key] = key === 'level' ? e.target.value : Number(e.target.value); if (assignForm.to < assignForm.from) assignForm.to = assignForm.from; renderAssign(); }
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && screen === 'parentGate') document.querySelector('[data-action="unlockParent"]')?.click();
+});
 
 render();

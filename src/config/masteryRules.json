@@ -1,37 +1,17 @@
 {
-  "accuracy": {
-    "finalCorrectedAccuracyRequired": 1,
-    "practiceAgainMustEndAllCorrect": true,
-    "wrongPracticeAnswersDoNotAdvance": true,
-    "wrongLessonAnswersMustBeCorrectedBeforeMovingOn": true
+  "practiceAgain": {
+    "sourceItems": ["wrong_first_try", "slow_correct", "similar_same_skill"],
+    "mustClearAllItems": true,
+    "wrongPracticeAnswerDoesNotClearItem": true
   },
-  "timing": {
-    "useSctWhenAvailable": true,
-    "allowFinishAfterTimeExceeded": true,
-    "levelsWithoutHardSct": ["ZI", "ZII", "6A", "5A"]
+  "continueNextLesson": {
+    "requiresMastery": true,
+    "requiresPracticeAgainCleared": true,
+    "optionalForChild": true
   },
-  "studentView": {
-    "lessonLabelFormat": "level-dash-number",
-    "showTodayDate": true,
-    "hideBackendTerms": true,
-    "noChildFacingReset": true
-  },
-  "workflow": {
-    "practiceAgainBeforeSessionEnd": true,
-    "continueNextLessonOnlyAfterMastery": true,
-    "continueNextLessonOptional": true,
-    "sameDateForContinuedLessons": true
-  },
-  "quickWarmUp": {
-    "parentAssignmentOverridesAppRecommendation": true,
-    "appRecommendationDefaultIfParentDoesNothing": true,
-    "futureLevelsLocked": true,
-    "currentAndLowerLevelsAvailable": true
-  },
-  "parentView": {
-    "parentOnlyReset": true,
-    "dailyRecordFilters": ["startDate", "endDate", "level"],
-    "graphsDefaultToEntireProgress": true,
-    "separateProgressAndRepetitionGraphs": true
+  "reset": {
+    "parentOnly": true,
+    "clearsAllProgressKeys": true,
+    "returnsToLesson": "6A-1"
   }
 }

@@ -1,11 +1,10 @@
 {
-  "name": "math-stepwise-phase2-final-workflow",
-  "version": "2.4.1",
-  "description": "Phase 2 reset-fixed workflow build with strict retention, parent code gate, progress map, parent reset, records, filters, graphs, and audited upload structure.",
+  "name": "math-stepwise-phase2-click-reset-final",
+  "version": "2.5.0",
+  "description": "Phase 2 final workflow with robust click delegation, fixed reset, strict practice again, parent code, records and graphs.",
   "type": "module",
   "scripts": {
-    "audit": "node audit/audit.js",
-    "validate:rules": "node src/utils/ruleValidator.js"
+    "audit": "node audit/audit.js"
   },
   "private": true
 }

@@ -1,10 +1,6 @@
 {
-  "levels": [
-    { "id": "6A", "title": "Counting & Number Recognition", "subtitle": "Numbers 1–10", "status": "available", "lessonCount": 200, "hardSct": false },
-    { "id": "5A", "title": "Number Reading", "subtitle": "Numbers up to 50", "status": "coming_soon", "lessonCount": 200, "hardSct": false },
-    { "id": "4A", "title": "Number Writing", "subtitle": "Trace and write numbers", "status": "coming_soon", "lessonCount": 200, "hardSct": true },
-    { "id": "3A", "title": "Adding 1, 2, and 3", "subtitle": "Early addition", "status": "coming_soon", "lessonCount": 200, "hardSct": true },
-    { "id": "2A", "title": "Adding up to 10", "subtitle": "Early fluency", "status": "coming_soon", "lessonCount": 200, "hardSct": true },
-    { "id": "A", "title": "Addition & Subtraction", "subtitle": "Core arithmetic", "status": "coming_soon", "lessonCount": 200, "hardSct": true }
-  ]
+  "levels": ["6A", "5A", "4A", "3A", "2A", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "XV", "XM", "XP"],
+  "currentImplementation": "6A",
+  "futureLevelsLocked": true,
+  "lowerAndCurrentLevelsAssignable": true
 }
