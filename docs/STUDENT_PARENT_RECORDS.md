@@ -1,27 +1,38 @@
-# Student Information and Daily Work Record
+# Student and Parent Records
 
-## Student Information Page
+## Student Information
 
-The Parent View includes a Student Information page containing:
+The Parent View includes a Student Information page for:
 
 - Student name
-- Date of enrollment
+- Enrollment date
 - Starting level
-- Current level
-- Current lesson
+- Current level and lesson
 - Parent/guardian
 - Notes
 
 ## Daily Work Record
 
-The Parent View includes a record book showing:
+Each completed session creates a parent-facing record with:
 
 - Date
 - Level
 - Lesson
-- Time spent
-- First-try score
-- Final accuracy
+- Time
+- First-try result
+- Final corrected accuracy
 - Status
+- Recommendation
 
-This is meant to give parents a simple view of daily work without exposing complicated backend rules to the child.
+## Recommendations
+
+Recommendations are generated from lesson performance, especially:
+
+- Wrong on first try
+- Slow correct items
+- Repeated skill weakness
+- Current review queue
+
+## Child-facing simplicity
+
+The child does not see technical labels such as SCT, mastery parameters, or parent diagnostics. The child sees simple actions like Quick Practice, Practice Again, End Today’s Session, and Continue to Next Lesson.

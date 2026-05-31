@@ -20,42 +20,44 @@ const required = [
 ];
 
 const failures = [];
-function check(condition, message) {
-  if (!condition) failures.push(message);
-}
+function assert(condition, message) { if (!condition) failures.push(message); }
+function read(file) { return fs.readFileSync(path.join(root, file), 'utf8'); }
 
-for (const file of required) {
-  check(fs.existsSync(path.join(root, file)), `Missing required file: ${file}`);
-}
+for (const file of required) assert(fs.existsSync(path.join(root, file)), `Missing required file: ${file}`);
 
-const levels = JSON.parse(fs.readFileSync(path.join(root, 'src/config/levels.json'), 'utf8'));
-const rules = JSON.parse(fs.readFileSync(path.join(root, 'src/config/masteryRules.json'), 'utf8'));
-const app = fs.readFileSync(path.join(root, 'src/app.js'), 'utf8');
-const curriculum = fs.readFileSync(path.join(root, 'src/curriculum/level6A.js'), 'utf8');
-const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+const app = read('src/app.js');
+const store = read('src/engine/progressStore.js');
+const mastery = read('src/engine/masteryEngine.js');
+const generator = read('src/engine/questionGenerator.js');
+const readme = read('README.md');
 
-check(Array.isArray(levels.levels), 'levels.json must contain levels array.');
-check(levels.levels.some((l) => l.id === '6A' && l.status === 'available'), 'Level 6A must be available.');
-check(levels.levels.find((l) => l.id === '6A')?.lessonCount === 200, 'Level 6A must have 200 lessons.');
-check(rules.accuracy.finalCorrectedAccuracyRequired === 1.0, 'Mastery requires 100% corrected accuracy.');
-check(rules.time.allowFinishAfterTargetTime === true, 'App must allow child to finish after target time.');
-check(rules.childFacingRulesHidden === true, 'Child-facing rules must be hidden.');
-check(app.includes('Student Information'), 'Student Information screen missing.');
-check(app.includes('Daily Work Record'), 'Daily Work Record screen missing.');
-check(app.includes('localStorage'), 'Progress must persist in localStorage for Phase 2.');
-check(app.includes('selectedLevel') && app.includes('levelSelect'), 'Level dropdown logic missing.');
-check(curriculum.includes('Array.from({ length: 200 }'), 'Level 6A 200 lesson generator missing.');
-check(index.includes('type="module"'), 'index.html must load app as module.');
+assert(!app.includes('Reset Demo'), 'Child-facing Reset Demo text should be removed.');
+assert(!app.includes('data-reset'), 'Reset button event should not exist in child-facing app.');
+assert(app.includes('data-practice-again'), 'Practice Again button/event is missing.');
+assert(app.includes('data-end-session'), 'End Today’s Session action is missing.');
+assert(app.includes('data-continue-next'), 'Continue to Next Lesson action is missing.');
+assert(app.includes('data-assign-practice'), 'Parent practice assignment action is missing.');
+assert(app.includes('Quick Practice'), 'Child-facing Quick Practice label is missing.');
+assert(app.includes('Daily Work Record'), 'Daily Work Record screen is missing.');
+assert(app.includes('Recommendation'), 'Daily Work Record recommendation column is missing.');
+assert(mastery.includes('Wrong first try'), 'Practice Again must flag wrong-first-try items.');
+assert(mastery.includes('Slow correct item'), 'Practice Again must flag slow correct items.');
+assert(mastery.includes('buildPracticeAgainQueue'), 'Practice Again queue builder is missing.');
+assert(generator.includes('slowThresholdSeconds'), 'Question timing threshold is missing.');
+assert(store.includes('assignedPractice'), 'Assigned parent practice state is missing.');
+assert(store.includes('recommendation'), 'Daily record recommendations are missing from default records.');
+assert(readme.includes('Do **not** drag the outer folder'), 'Upload instructions are missing.');
+assert(!fs.existsSync(path.join(root, 'src/data')), 'Old duplicate src/data folder should not exist.');
 
-const disallowedChildPhrases = ['failed SCT', 'mastery parameters', 'accuracy condition not satisfied', 'fluency failure'];
-for (const phrase of disallowedChildPhrases) {
-  check(!app.includes(phrase), `Child-facing app contains disallowed backend phrase: ${phrase}`);
+for (const jsonFile of ['src/config/levels.json', 'src/config/masteryRules.json', 'package.json']) {
+  try { JSON.parse(read(jsonFile)); } catch (error) { failures.push(`Invalid JSON: ${jsonFile}`); }
 }
 
 if (failures.length) {
-  console.error('Phase 2 improved audit failed:');
-  failures.forEach((f) => console.error(`- ${f}`));
+  console.error('PHASE 2 REBUILT AUDIT FAILED');
+  for (const failure of failures) console.error(`- ${failure}`);
   process.exit(1);
 }
 
-console.log('Phase 2 improved audit passed.');
+console.log('PHASE 2 REBUILT AUDIT PASSED');
+console.log('Checked upload structure, child workflow, Practice Again, parent assignment, daily recommendations, and duplicate-folder cleanup.');

@@ -58,3 +58,7 @@ th { color: var(--muted); font-size: 14px; background: #f8fafc; }
   .lesson-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
   .choices { grid-template-columns: repeat(2, minmax(0,1fr)); }
 }
+.notice { background: #eef2ff; border-color: #c7d2fe; }
+.center-card { text-align: center; align-items: center; }
+.big-emoji { font-size: 56px; }
+.btn.large { width: 100%; min-height: 72px; font-size: 18px; }

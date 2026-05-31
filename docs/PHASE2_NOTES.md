@@ -1,29 +1,28 @@
-# Phase 2 Improved Notes
+# Phase 2 Rebuilt Notes
 
-Phase 2 builds the reusable app skeleton/engine. It does not yet fully build every Level 6A question or lesson. That belongs to Phase 3.
+This Phase 2 rebuild keeps the upload-ready root structure:
 
-## Locked UI direction
+- `audit/`
+- `docs/`
+- `src/`
+- `index.html`
+- `package.json`
+- `README.md`
 
-- Student View must remain simple and encouraging.
-- Parent View may show progress, student information, daily records, review queue, and readiness signals.
-- Level selection must use a dropdown to avoid clutter.
-- Backend rules must not overwhelm the child-facing screen.
+## Improvements included
 
-## Data recorded by the app
+- Removed child-facing Reset Demo button.
+- Made Practice Again clickable and functional.
+- Added child workflow after every lesson/block:
+  1. Main lesson/block
+  2. Practice Again based on wrong-first-try and slow correct items
+  3. End Today’s Session or Continue to Next Lesson
+- Added Parent View assignment flow for Parent’s Choice Practice.
+- Parent’s Choice Practice is saved for the next session, not injected into the same day after the child has already worked.
+- Child-facing label for assigned parent practice is “Quick Practice.”
+- Added Daily Work Record recommendations for parents.
+- Added Student Information page with enrollment and placement details.
 
-The app stores demo data in browser `localStorage`:
+## Parent’s Choice Practice rule
 
-- Student profile
-- Current selected level
-- Daily work records
-- Review queue
-- Lesson progress summary
-
-## Mastery rule carried forward
-
-Mastery is based on:
-
-1. Final corrected accuracy reaching 100%.
-2. Timed levels satisfying the SCT-based target.
-3. All review items being cleared before promotion.
-4. 6A/5A tracking time softly because SCT is not used for these levels.
+Parent’s Choice Practice is selected in Parent View after reviewing the Daily Work Record. It appears the next time the child starts a session as Quick Practice before the regular lesson.
