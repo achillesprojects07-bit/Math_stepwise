@@ -130,5 +130,3 @@ th { color: #64748b; background: #f8fafc; font-size: 13px; }
 .typedAnswer { display: flex; gap: 12px; align-items: center; justify-content: center; flex-wrap: wrap; }
 .typedAnswer input { max-width: 220px; font-size: 28px; text-align: center; min-height: 64px; }
 .setupCard { max-width: 980px; margin-left: auto; margin-right: auto; }
-
-.levelPills{display:flex;flex-wrap:wrap;gap:.7rem;margin:1rem 0}.lockedPill{opacity:.55}.materialsGrid{margin-top:1rem}.materialBlock{display:flex;flex-direction:column;gap:.35rem;text-align:left;border:1px solid var(--border);border-radius:1.25rem;background:#fff;padding:1rem;cursor:pointer}.materialBlock:hover,.materialBlock.active{border-color:#6552f4;background:#f5f3ff}.materialBlock small{color:var(--muted)}.subcard{border:1px solid var(--border);border-radius:1.4rem;background:#f8fafc;padding:1rem;margin-top:1rem}.lessonChipGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(72px,1fr));gap:.55rem}.lessonChipGrid span{border:1px solid var(--border);border-radius:.9rem;background:#fff;text-align:center;font-weight:800;padding:.6rem .35rem}.warningIcon{font-size:3rem}
