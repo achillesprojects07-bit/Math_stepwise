@@ -18,6 +18,9 @@ const checks = [
   ['safe choices loop bounded', 'while (set.size < Math.min(4, max - min + 1))'],
   ['daily record filters', "data-filter=\"from\""],
   ['graphs render', 'Progress Graph'],
+  ['line graph svg renders', 'lineSvg'],
+  ['encouragement rotation exists', 'encouragementFor'],
+  ['wrong answer attempt count shown', 'Try ${q.wrongAttempts + 1}'],
   ['parent assignment override exists', 'state.manualWarmup']
 ];
 const failed = checks.filter(([_, needle]) => !app.includes(needle)).map(([name]) => name);
@@ -38,4 +41,4 @@ for (const ans of [1,2,3,4,5]) {
   const c = safeChoices(ans,1,5);
   if (!c.includes(ans) || c.length !== 4) throw new Error('safeChoices failed for ' + ans);
 }
-console.log('AUDIT PASSED: click handling, reset, practice retention, safe choices, parent gate, records and graphs checked.');
+console.log('AUDIT PASSED: click handling, reset, practice retention, encouragement rotation, safe choices, parent gate, records and line graphs checked.');

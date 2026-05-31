@@ -77,3 +77,21 @@ th { color: #64748b; background: #f8fafc; font-size: 13px; }
   .two, .three, .four, .infoGrid, .filters, .formGrid { grid-template-columns: 1fr; }
   .choices { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* Encouragement and line graph improvements */
+.feedback strong { display:block; margin-bottom:4px; }
+.shake { animation: shakeChoice 0.28s ease-in-out; }
+@keyframes shakeChoice {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  50% { transform: translateX(4px); }
+  75% { transform: translateX(-3px); }
+  100% { transform: translateX(0); }
+}
+.lineChart { min-height: 250px; }
+.lineSvg { width: 100%; height: 220px; overflow: visible; }
+.axis { stroke: #cbd5e1; stroke-width: 2; }
+.trendLine { stroke: #4f46e5; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+.point { fill: #ffffff; stroke: #4f46e5; stroke-width: 4; }
+.pointLabel { fill: #334155; font-size: 14px; font-weight: 800; }
+.dateLabel { fill: #64748b; font-size: 12px; font-weight: 700; }

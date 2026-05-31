@@ -14,3 +14,10 @@ Audit covered:
 - Continue to Next Lesson requires mastery
 - Multiple-choice generator does not freeze on 1–5 edge values
 - Daily Record filters and graphs
+
+
+Additional checks passed:
+- Rotating encouragement engine exists for wrong attempts.
+- Wrong attempt feedback changes by attempt count.
+- Choice shake feedback exists for wrong taps.
+- Daily Work Record uses SVG line graphs for Progress and Practice/Repetition.

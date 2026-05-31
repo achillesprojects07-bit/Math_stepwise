@@ -24,3 +24,8 @@ Upload these six items together to GitHub:
 - Daily Work Record with date and level filters
 - Separate progress and repetition graphs
 - Quick Warm-Up logic with app recommendation and parent override
+
+
+## Latest update: Encouragement + Line Graphs
+
+This build adds rotating child-friendly encouragement messages for repeated wrong attempts so the app always feels responsive. It also changes the Daily Work Record visuals to separate line graphs for Progress and Practice/Repetition trends.

@@ -1,4 +1,4 @@
-const STORAGE_KEY = 'math_stepwise_progress_v5_click_reset_final';
+const STORAGE_KEY = 'math_stepwise_progress_v6_encouragement_linegraphs';
 const OLD_KEY_PREFIX = 'math_stepwise_progress';
 const PARENT_CODE = '1234';
 const app = document.getElementById('app');
@@ -78,6 +78,47 @@ function activeWarmup() {
   return null;
 }
 function displayDots(n) { return Array.from({ length: n }, () => '●').join(' '); }
+const encouragementLines = {
+  counting_1_5: [
+    'Almost! Count each one slowly.',
+    'Take your time. Touch each item as you count.',
+    "Let’s start from one and count again.",
+    'You are close. Look one by one.',
+    "No rush. Let’s practice this together."
+  ],
+  counting_1_10: [
+    'Almost! Count each one slowly.',
+    'Try pointing to each dot as you count.',
+    "Let’s slow down and count from one.",
+    'Look carefully. You can do this.',
+    'No rush. Count one by one.'
+  ],
+  number_reading_1_10: [
+    'Almost! Look at the number again.',
+    'Take your time. Find the matching number.',
+    'You are learning it. Try once more.',
+    'Check the number carefully.',
+    'No rush. Choose again when you are ready.'
+  ],
+  dot_recognition_1_10: [
+    'Almost! Look at the dots in small groups.',
+    'Try counting the dots one by one.',
+    'You are close. Check the dots again.',
+    'Take your time and look carefully.',
+    "No rush. Let’s try this dot pattern again."
+  ],
+  default: [
+    'Almost! Try again.',
+    'Take your time. Try once more.',
+    'You are close. Look carefully.',
+    "No rush. Let’s try again.",
+    'Keep going. You are learning.'
+  ]
+};
+function encouragementFor(q) {
+  const list = encouragementLines[q.skill] || encouragementLines.default;
+  return list[Math.min(q.wrongAttempts - 1, list.length - 1)];
+}
 function safeChoices(answer, min, max) {
   const set = new Set([answer]);
   let delta = 1;
@@ -203,7 +244,14 @@ function chooseAnswer(value) {
     q.hadWrongAttempt = true;
     q.wrongAttempts += 1;
     const fb = document.getElementById('feedback');
-    if (fb) fb.innerHTML = `<div class="feedback">Almost. Try this one again.${q.wrongAttempts >= 2 ? ' Count slowly one by one.' : ''}</div>`;
+    if (fb) fb.innerHTML = `<div class="feedback"><strong>${encouragementFor(q)}</strong><br><span>Try ${q.wrongAttempts + 1}. The question is still active.</span></div>`;
+    document.querySelectorAll('.choice').forEach(el => {
+      if (Number(el.dataset.answer) === chosen) {
+        el.classList.remove('shake');
+        void el.offsetWidth;
+        el.classList.add('shake');
+      }
+    });
     return;
   }
   const entry = { questionId: q.id, skill: q.skill, answer: q.answer, finalCorrect: true, wasWrongFirstTry: q.hadWrongAttempt, wasSlow: elapsed > q.slowThresholdMs, wrongAttempts: q.wrongAttempts, elapsedMs: elapsed, display: q.display };
@@ -269,7 +317,24 @@ function filteredRecords() { return state.dailyRecords.filter(r => (recordFilter
 function renderDailyRecord() {
   const rows = filteredRecords();
   const grouped = [...rows.reduce((m,r)=>m.set(r.date,[...(m.get(r.date)||[]),r]),new Map()).entries()].map(([date,list])=>({date,list}));
-  const chart = (title, getValue) => { const vals = grouped.map(getValue); const max = Math.max(1,...vals); return `<div class="chart"><h3>${title}</h3>${grouped.length ? `<div class="bars">${grouped.map((g,i)=>`<div class="barItem"><div class="barValue">${vals[i]}</div><div class="bar" style="height:${Math.max(8,Math.round(vals[i]/max*110))}px"></div><div class="barLabel">${g.date.slice(5)}</div></div>`).join('')}</div>` : '<p class="muted">No data for this range.</p>'}</div>`; };
+  const chart = (title, getValue) => {
+    const vals = grouped.map(getValue);
+    const max = Math.max(1, ...vals);
+    const width = 520, height = 170, pad = 28;
+    const points = vals.map((v, i) => {
+      const x = grouped.length === 1 ? width / 2 : pad + (i * (width - pad * 2)) / (grouped.length - 1);
+      const y = height - pad - (v / max) * (height - pad * 2);
+      return { x, y, v, label: grouped[i].date.slice(5) };
+    });
+    const polyline = points.map(p => `${p.x},${p.y}`).join(' ');
+    return `<div class="chart lineChart"><h3>${title}</h3>${grouped.length ? `
+      <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${title}" class="lineSvg">
+        <line x1="${pad}" y1="${height-pad}" x2="${width-pad}" y2="${height-pad}" class="axis" />
+        <line x1="${pad}" y1="${pad}" x2="${pad}" y2="${height-pad}" class="axis" />
+        <polyline points="${polyline}" class="trendLine" fill="none" />
+        ${points.map(p => `<g><circle cx="${p.x}" cy="${p.y}" r="5" class="point" /><text x="${p.x}" y="${Math.max(14, p.y-10)}" text-anchor="middle" class="pointLabel">${p.v}</text><text x="${p.x}" y="${height-8}" text-anchor="middle" class="dateLabel">${p.label}</text></g>`).join('')}
+      </svg>` : '<p class="muted">No data for this range.</p>'}</div>`;
+  };
   shell(`<section class="card"><button type="button" class="ghost" data-action="parentHome">← Back</button><h1>Daily Work Record</h1><p class="muted">Default view shows the entire recorded progress. Use filters for a specific range.</p><div class="filters"><label>From <input type="date" data-filter="from" value="${recordFilters.from}"></label><label>To <input type="date" data-filter="to" value="${recordFilters.to}"></label><label>Level <select data-filter="level"><option value="all" ${recordFilters.level==='all'?'selected':''}>All levels</option>${levels.map(l=>`<option value="${l.id}" ${recordFilters.level===l.id?'selected':''}>${l.id}</option>`).join('')}</select></label><button type="button" class="secondary" data-action="clearFilters">Entire Progress</button></div></section><section class="grid two">${chart('Progress Graph', g => g.list.filter(r=>r.mastered).length)}${chart('Practice & Repetition Graph', g => g.list.reduce((s,r)=>s+(r.practiceItemCount||0)+(r.wrongFirstTry||0),0))}</section><section class="card"><h2>Records</h2><div class="tableWrap"><table><thead><tr><th>Date</th><th>Lesson</th><th>Lesson Score</th><th>Practice Needed</th><th>Practice Result</th><th>Time</th><th>Final Status</th><th>Next Practice</th><th>Recommendation</th></tr></thead><tbody>${(rows.length?rows.slice().reverse():[{displayDate:'No records yet',lesson:'-',lessonScore:'-',practiceNeeded:'-',practiceResult:'-',time:'-',finalStatus:'-',nextPractice:'-',recommendation:'Complete a lesson to see recommendations.'}]).map(r=>`<tr><td>${r.displayDate}</td><td>${r.lesson}</td><td>${r.lessonScore}</td><td>${r.practiceNeeded}</td><td>${r.practiceResult}</td><td>${r.time}</td><td>${r.finalStatus}</td><td>${r.nextPractice}</td><td>${r.recommendation}</td></tr>`).join('')}</tbody></table></div></section>`);
 }
 function isAssignable(id) { return levelOrder.indexOf(id) <= levelOrder.indexOf(state.student.currentLevel); }
