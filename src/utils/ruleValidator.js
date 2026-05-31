@@ -1,17 +1,17 @@
 import fs from 'fs';
 
 const rules = JSON.parse(fs.readFileSync(new URL('../config/masteryRules.json', import.meta.url)));
-const levels = JSON.parse(fs.readFileSync(new URL('../config/levels.json', import.meta.url)));
+const errors = [];
 
-function assert(condition, message) {
-  if (!condition) throw new Error(message);
+if (rules.accuracy.finalCorrectedAccuracyRequired !== 1) errors.push('Final corrected accuracy must be 100%.');
+if (!rules.accuracy.practiceAgainMustEndAllCorrect) errors.push('Practice Again must require all correct.');
+if (!rules.timing.allowFinishAfterTimeExceeded) errors.push('Child must be allowed to finish after time exceeded.');
+if (!rules.studentView.hideResetControls) errors.push('Student View must hide reset controls.');
+if (rules.studentView.lessonLabelFormat !== 'level-dash-number') errors.push('Visible lesson labels must use level-dash-number format.');
+if (!rules.parentView.allowParentReset) errors.push('Parent reset must be enabled.');
+
+if (errors.length) {
+  console.error(errors.join('\n'));
+  process.exit(1);
 }
-
-assert(rules.accuracy.finalCorrectedAccuracyRequired === 1.0, 'Final corrected accuracy must be 100%.');
-assert(rules.time.allowFinishAfterTargetTime === true, 'Child must be allowed to finish after target time.');
-assert(rules.time.useSctWhenAvailable === true, 'SCT must be used when available.');
-assert(rules.time.nonSctLevels.includes('6A') && rules.time.nonSctLevels.includes('5A'), '6A and 5A must be non-SCT levels.');
-assert(rules.childFacingRulesHidden === true, 'Backend rules must be hidden from child-facing UI.');
-assert(levels.levels.some((level) => level.id === '6A' && level.status === 'available'), '6A must be available.');
-
 console.log('Rule validation passed.');

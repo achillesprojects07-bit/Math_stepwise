@@ -1,72 +1,52 @@
-export function generate6AQuestion(lessonId = '6A013') {
-  const lessonNumber = Number(String(lessonId).replace('6A', '')) || 13;
-  if (lessonNumber <= 30) return makeCountingQuestion(5, 'counting_1_to_5');
-  if (lessonNumber <= 100) return makeCountingQuestion(10, 'counting_1_to_10');
-  if (lessonNumber <= 150) return makeNumberReadingQuestion(10, 'number_reading_1_to_10');
-  return makeDotQuestion(10, 'dot_recognition_1_to_10');
+const icons = ['⭐', '🍎', '●', '🌸', '🔵', '🟣'];
+
+function shuffle(array) {
+  return [...array].sort(() => Math.random() - 0.5);
 }
 
-export function generatePracticeQuestion(skill = 'counting_1_to_5') {
-  if (skill.includes('dot')) return makeDotQuestion(skill.includes('10') ? 10 : 5, skill);
-  if (skill.includes('number')) return makeNumberReadingQuestion(10, skill);
-  if (skill.includes('10')) return makeCountingQuestion(10, skill);
-  return makeCountingQuestion(5, skill);
-}
-
-export function similarSkillFromQuestion(question) {
-  return question?.skill || 'counting_1_to_5';
-}
-
-function makeCountingQuestion(max, skill) {
-  const answer = randomInt(1, max);
-  const object = pick(['⭐', '🍎', '🟣', '🐣', '🌼']);
-  return {
-    type: 'multiple_choice',
-    skill,
-    prompt: `How many ${object === '⭐' ? 'stars' : 'objects'}?`,
-    visual: object.repeat(answer),
-    answer,
-    choices: makeChoices(answer, max),
-    slowThresholdSeconds: max <= 5 ? 8 : 12
-  };
-}
-
-function makeNumberReadingQuestion(max, skill) {
-  const answer = randomInt(1, max);
-  return {
-    type: 'multiple_choice',
-    skill,
-    prompt: `Find ${answer}`,
-    visual: String(answer),
-    answer,
-    choices: makeChoices(answer, max),
-    slowThresholdSeconds: 6
-  };
-}
-
-function makeDotQuestion(max, skill) {
-  const answer = randomInt(1, max);
-  return {
-    type: 'multiple_choice',
-    skill,
-    prompt: 'How many dots?',
-    visual: '● '.repeat(answer).trim(),
-    answer,
-    choices: makeChoices(answer, max),
-    slowThresholdSeconds: max <= 5 ? 6 : 9
-  };
-}
-
-function makeChoices(answer, max) {
+function choicesFor(answer, max = 10) {
   const set = new Set([answer]);
-  while (set.size < 4) set.add(randomInt(1, max));
-  return Array.from(set).sort((a, b) => a - b);
+  while (set.size < 4) {
+    const delta = Math.floor(Math.random() * 5) - 2;
+    const candidate = Math.min(max, Math.max(1, answer + delta || Math.ceil(Math.random() * max)));
+    set.add(candidate);
+  }
+  return shuffle([...set]);
 }
 
-function randomInt(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+export function getRangeForSkill(skill) {
+  if (skill === 'count_1_to_5') return [1, 5];
+  return [1, 10];
 }
 
-function pick(items) {
-  return items[Math.floor(Math.random() * items.length)];
+export function generateQuestion(skill, source = 'lesson') {
+  const [min, max] = getRangeForSkill(skill);
+  const answer = Math.floor(Math.random() * (max - min + 1)) + min;
+  const icon = icons[Math.floor(Math.random() * icons.length)];
+  const kind = skill.includes('read_numbers') ? 'number_reading' : 'counting';
+  return {
+    id: `${source}-${skill}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    skill,
+    source,
+    kind,
+    prompt: kind === 'number_reading' ? 'Choose the matching group.' : `How many ${icon} do you see?`,
+    display: kind === 'number_reading' ? String(answer) : icon.repeat(answer),
+    answer,
+    choices: choicesFor(answer, max),
+    slowThresholdMs: skill === 'count_1_to_5' ? 8000 : 10000
+  };
+}
+
+export function generateLessonQuestions(lesson) {
+  return Array.from({ length: lesson.questionCount || 10 }, () => generateQuestion(lesson.skill, 'lesson'));
+}
+
+export function generatePracticeItems(answerLog) {
+  const weakItems = answerLog.filter((entry) => entry.wasWrongFirstTry || entry.wasSlow);
+  const practice = [];
+  weakItems.forEach((entry) => {
+    practice.push({ ...entry.question, id: `${entry.question.id}-retry`, source: 'practice_again' });
+    practice.push(generateQuestion(entry.question.skill, 'practice_again_similar'));
+  });
+  return practice.slice(0, Math.max(weakItems.length, 1) * 2);
 }

@@ -1,23 +1,29 @@
+export function toVisibleLessonId(internalId) {
+  const match = internalId.match(/^([A-Z0-9]+?)(\d+)$/);
+  if (!match) return internalId;
+  return `${match[1]}-${Number(match[2])}`;
+}
+
 export const level6AUnits = [
-  { id: '6A-U1', title: 'Counting up to 5', range: '6A001–6A030', start: 1, end: 30, icon: '🍎', mode: 'count_objects' },
-  { id: '6A-U2', title: 'Counting up to 10', range: '6A031–6A100', start: 31, end: 100, icon: '⭐', mode: 'count_objects' },
-  { id: '6A-U3', title: 'Number Reading up to 10', range: '6A101–6A150', start: 101, end: 150, icon: '🔢', mode: 'number_reading' },
-  { id: '6A-U4', title: 'Number of Dots up to 10', range: '6A151–6A200', start: 151, end: 200, icon: '⚫', mode: 'dot_recognition' }
+  { unit: 1, title: 'Counting up to 5', range: [1, 30], skill: 'count_1_to_5' },
+  { unit: 2, title: 'Counting up to 10', range: [31, 100], skill: 'count_1_to_10' },
+  { unit: 3, title: 'Number Reading up to 10', range: [101, 150], skill: 'read_numbers_1_to_10' },
+  { unit: 4, title: 'Dot Recognition up to 10', range: [151, 200], skill: 'recognize_dots_1_to_10' }
 ];
 
 export const level6ALessons = Array.from({ length: 200 }, (_, index) => {
-  const lessonNumber = index + 1;
-  const unit = level6AUnits.find((u) => lessonNumber >= u.start && lessonNumber <= u.end);
+  const n = index + 1;
+  const internalId = `6A${String(n).padStart(3, '0')}`;
+  const unit = level6AUnits.find((u) => n >= u.range[0] && n <= u.range[1]);
   return {
-    id: `6A${String(lessonNumber).padStart(3, '0')}`,
+    internalId,
+    displayId: toVisibleLessonId(internalId),
+    lessonNumber: n,
     level: '6A',
-    unitId: unit.id,
-    unitTitle: unit.title,
-    lessonNumber,
-    mode: unit.mode,
-    sctUsed: false,
-    questionCount: lessonNumber <= 30 ? 10 : 12,
-    finalCorrectedAccuracyRequired: 1.0,
-    timeHardGate: false
+    unit: unit.unit,
+    title: unit.title,
+    skill: unit.skill,
+    questionCount: 10,
+    hardSct: false
   };
 });

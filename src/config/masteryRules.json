@@ -1,24 +1,27 @@
 {
-  "version": "phase2-improved",
-  "childFacingRulesHidden": true,
+  "version": "2.2.0",
   "accuracy": {
     "finalCorrectedAccuracyRequired": 1.0,
-    "mistakesMustBeCorrected": true,
-    "unresolvedMistakesTriggerReview": true
+    "wrongFirstTryGoesToPracticeAgain": true,
+    "practiceAgainMustEndAllCorrect": true
   },
-  "time": {
+  "timing": {
     "useSctWhenAvailable": true,
-    "allowFinishAfterTargetTime": true,
-    "overTimeStatus": "completed_needs_fluency",
-    "nonSctLevels": ["ZI", "ZII", "6A", "5A"]
+    "allowFinishAfterTimeExceeded": true,
+    "levelsWithoutHardSct": ["ZI", "ZII", "6A", "5A"],
+    "slowItemsGoToPracticeAgain": true
   },
-  "promotion": {
-    "needsReviewMustBeCleared": true,
-    "finalLevelMasteryCheckRequired": true,
-    "timedLevelsRequireSctPass": true
+  "studentView": {
+    "hideBackendRules": true,
+    "hideResetControls": true,
+    "lessonLabelFormat": "level-dash-number",
+    "example": "6A-13"
   },
-  "views": {
-    "studentView": "simple_encouraging",
-    "parentView": "progress_records_and_readiness"
+  "parentView": {
+    "showStudentInformation": true,
+    "showDailyWorkRecord": true,
+    "showRecommendations": true,
+    "allowParentReset": true,
+    "allowParentChoiceForNextSession": true
   }
 }

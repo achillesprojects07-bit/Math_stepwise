@@ -1,11 +1,9 @@
 {
   "levels": [
-    { "id": "6A", "title": "Counting & Number Recognition", "subtitle": "Numbers 1–10", "status": "available", "sctUsed": false, "lessonCount": 200 },
-    { "id": "5A", "title": "Number Reading", "subtitle": "Numbers up to 50", "status": "coming_soon", "sctUsed": false, "lessonCount": 200 },
-    { "id": "4A", "title": "Number Writing", "subtitle": "Trace and write numbers", "status": "coming_soon", "sctUsed": true, "lessonCount": 200 },
-    { "id": "3A", "title": "Adding 1, 2, and 3", "subtitle": "Early addition", "status": "coming_soon", "sctUsed": true, "lessonCount": 200 },
-    { "id": "2A", "title": "Adding up to 10", "subtitle": "Addition fluency", "status": "coming_soon", "sctUsed": true, "lessonCount": 200 },
-    { "id": "A", "title": "Addition & Subtraction", "subtitle": "Arithmetic basics", "status": "coming_soon", "sctUsed": true, "lessonCount": 200 },
-    { "id": "B", "title": "Addition/Subtraction to 100", "subtitle": "2-digit and 3-digit arithmetic", "status": "coming_soon", "sctUsed": true, "lessonCount": 200 }
+    { "id": "6A", "title": "Counting & Number Recognition", "subtitle": "Numbers 1–10", "status": "available", "lessonCount": 200, "hardSct": false },
+    { "id": "5A", "title": "Number Reading", "subtitle": "Numbers up to 50", "status": "coming_soon", "lessonCount": 200, "hardSct": false },
+    { "id": "4A", "title": "Number Writing", "subtitle": "Trace and write numbers", "status": "coming_soon", "lessonCount": 200, "hardSct": true },
+    { "id": "3A", "title": "Adding 1, 2, and 3", "subtitle": "Early addition", "status": "coming_soon", "lessonCount": 200, "hardSct": true },
+    { "id": "2A", "title": "Adding up to 10", "subtitle": "Early fluency", "status": "coming_soon", "lessonCount": 200, "hardSct": true }
   ]
 }

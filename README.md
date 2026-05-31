@@ -1,21 +1,10 @@
-# StepWise Math — Phase 2 Rebuilt App Skeleton
+# Math Stepwise — Phase 2 Rebuilt
 
-This is the upload-ready, audited Phase 2 app skeleton.
+This is the upload-ready Phase 2 app skeleton with retention workflow and parent controls.
 
-## Upload to GitHub
+## Upload structure
 
-Extract the ZIP, open the extracted folder, and drag these items together into GitHub:
-
-```txt
-audit
-docs
-src
-index.html
-package.json
-README.md
-```
-
-Do **not** drag the outer folder. The repo root should show:
+Upload these items together to GitHub:
 
 ```txt
 audit/
@@ -26,28 +15,25 @@ package.json
 README.md
 ```
 
-## Included in this rebuild
+Do not drag the outer extracted folder. Drag the six items above.
+
+## Included
 
 - Student View and Parent View
-- Level dropdown to avoid clutter
-- Level 6A lesson map preview
+- Level dropdown, using clean visible lesson labels like `6A-1`, `6A-13`, `6A-200`
+- Level 6A preview curriculum with 200 generated lesson IDs
+- Practice Again workflow after each lesson/block
+- Practice Again continues until all retention items are correct
+- Practice Again is based on wrong-first-try items, slow correct items, and similar generated items
+- End Today’s Session and Continue to Next Lesson buttons
+- Parent-only Reset Student Progress button
 - Student Information page
 - Daily Work Record with recommendations
-- Parent’s Choice Practice assignment for the next session
-- Child workflow: lesson/block → Practice Again → End Today’s Session or Continue to Next Lesson
-- Practice Again based on wrong-first-try and slow correct items
-- Child-facing Reset Demo removed
-- Local browser progress storage
-- Audit script and audit report
+- Parent’s Choice assignment for the next session only
+- No child-facing reset/demo button
 
-## Run locally
+## Local audit
 
-Open `index.html` in a browser, or run a simple local server.
-
-## Audit
-
-The audit script is in:
-
-```txt
-audit/phase2Audit.js
+```bash
+npm run audit
 ```
