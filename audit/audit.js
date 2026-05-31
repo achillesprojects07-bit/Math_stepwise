@@ -47,3 +47,19 @@ if(available !== '6A,5A,4A,3A,2A') throw new Error('Available levels mismatch: '
 console.log('Phase 4 technical audit passed.');
 console.log('Phase 4 curriculum content audit passed: 6A, 5A, 4A, 3A, 2A each have 200 explicit lessons.');
 console.log('Phase 4 UX audit passed: starting level dropdown uses built levels only and avoids later-phase clutter.');
+
+const addedChecks = [
+  ['student info remains editable after save', 'editStudentInfo'],
+  ['starting point change requires confirmation', 'Confirm starting point change'],
+  ['confirmed starting point updates current placement', 'currentLevel:pending.startingLevel'],
+  ['confirmed starting point clears old progress', 'state.dailyRecords=[]'],
+  ['learning materials section exists', 'function renderLearningMaterials'],
+  ['parent dashboard links learning materials', 'data-action="materials"'],
+  ['learning materials can show lesson chips', 'lessonChipGrid'],
+  ['materials page includes all built levels', 'materialsLevel'],
+  ['materials block click opens worksheet equivalent lessons', 'materialsBlock']
+];
+const addedFailed = addedChecks.filter(([_,needle])=>!app.includes(needle)).map(([name])=>name);
+if(addedFailed.length) throw new Error('Added feature checks failed: '+addedFailed.join(', '));
+console.log('Phase 4 added-feature audit passed: editable student info, starting point confirmation, and learning materials table.');
+
