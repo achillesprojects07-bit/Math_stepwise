@@ -1,4 +1,4 @@
-const STORAGE_KEY = 'math_stepwise_progress_v8_phase4_early_levels';
+const STORAGE_KEY = 'math_stepwise_progress_v9_phase4_all_levels_fixed';
 const OLD_KEY_PREFIX = 'math_stepwise_progress';
 const DEFAULT_PARENT_CODE = '1234';
 const app = document.getElementById('app');
